@@ -57,16 +57,19 @@ def d405_dummy(floor):
     return b
 
 
-def assemble(opening=0.6, camera="wrist", tilt_deg=35.0, support=None, crank_z=CRANK_Z, conn_z=CONN_Z):
+def assemble(opening=0.6, camera="wrist", tilt_deg=35.0, support=None, crank_z=CRANK_Z, conn_z=CONN_Z, redesign=True):
     parts = {}
 
     def add(name, shape, mat, colour):
         parts[name] = (place(shape, mat), colour)
 
     I3 = np.eye(3)
-    add("main_support", step(support or R / "fisheye_camera_main_support.step"), np.eye(4), BLACK)
+    RD = HW / "STEP/redesign"
+    support = support or (RD / "main_support.step" if redesign else R / "fisheye_camera_main_support.step")
+    add("main_support", step(support), np.eye(4), BLACK)
     # cover plate: rod Ø4.1 (x -28/-8, z 29) and M3 (z 4) line up with the bar; nuts in the bar's slots, y 140..150
-    add("main_support_cover_plate", step(R / "main_support_cover_plate.step"), T(I3, [0, 150, 0]), BLACK)
+    add("main_support_cover_plate", step(RD / "end_cover.step" if redesign else R / "main_support_cover_plate.step"),
+        T(I3, [0, 150, 0]), BLACK)
     for x in (-28.0, -8.0):                                   # Ø4 x 135 rods
         add(f"rod_{x:+.0f}", Cylinder(2.0, 135.0), T([[1, 0, 0], [0, 0, 1], [0, -1, 0]], [x, 75.0, 29.0]), METAL)
 
@@ -96,6 +99,13 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=35.0, support=None, crank_z=C
     add("hand_support_base", step(R / "hand_support_base.step"), T(I3, [31.0, 54.5, 8.0]), RED)
     add("controller_support", step(R / "right_controller_support.step"),
         T([[0, 1, 0], [-1, 0, 0], [0, 0, 1]], [53.0, 95.4, 0.0]), BLACK)
+
+    # servo-controller box (Waveshare adapter) on the arm, -Z side, between the servo and the controller support.
+    # HandUMI has no mating holes for it on the arm, so this follows their cover render: floor on the arm, lid up.
+    RB = [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
+    add("servo_controller_box", step(R / "right_servo_controller_support.step"), T(RB, [40.0, 72.5, -20.0]), RED)
+    add("servo_controller_lid", step(RD / "controller_lid.step" if redesign else R / "servo_controller_cover.step"),
+        T(RB, [40.0, 72.5, -27.7]), RED)
 
     # camera on the hinge tab (Ø3.2 axis Y at x -29.7, z -45, centred y 72.5)
     cams = {"wrist": (HW / "STEP/d405/wrist_d405_mount_handumi.step", 2.0),
@@ -183,11 +193,12 @@ if __name__ == "__main__":
     ap.add_argument("--out", default=str(ROOT / "docs/img/assembly.png"))
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--solve", action="store_true")
+    ap.add_argument("--original", action="store_true", help="stock HandUMI parts instead of the redesign")
     a = ap.parse_args()
     if a.solve:
         print("best (overlap, crank_z, conn_z):", solve_heights())
     else:
-        parts = assemble(a.opening, a.camera, support=a.support)
+        parts = assemble(a.opening, a.camera, support=a.support, redesign=not a.original)
         print(render(parts, a.out))
         if a.check:
             print("interferences:", interferences(parts) or "none")

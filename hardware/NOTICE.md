@@ -11,5 +11,8 @@ Changes in this repository:
 - **Added** `STEP/d405/wrist_d405_mount_handumi.step` and `STL/d405/wrist_d405_mount_handumi.stl`: the supplied D405 wrist
   mount with its tab replaced by HandUMI's camera hinge (cut unchanged from `camera_mount.step`). Source:
   `d405_mount/wrist_mount_to_handumi.py`.
+- **Added** `STEP/redesign/` and `STL/redesign/`: `main_support`, `end_cover` and `controller_lid`, restyled versions of
+  `fisheye_camera_main_support`, `main_support_cover_plate` and `servo_controller_cover`. Mating features are unchanged.
+  Source: `redesign/restyle.py`.
 
 Every other file in `hardware/` and `bom/` is unmodified.

@@ -1,4 +1,4 @@
-"""Render README images of the D405 mounts (offscreen).  python render_mounts.py <input wrist mount .stl>"""
+"""Render the README image of the D405 wrist mount (offscreen).  python render_mounts.py <input wrist mount .stl>"""
 import sys
 from pathlib import Path
 
@@ -40,23 +40,14 @@ def main(src):
     if orig.extents.max() < 1.0:
         orig.apply_scale(1000.0)
     wrist = trimesh.load(ROOT / "hardware/STL/d405/wrist_d405_mount_handumi.stl")
-    plate = trimesh.load(ROOT / "hardware/STL/d405/d405_camera_mount.stl")
-    stock = trimesh.load(ROOT / "hardware/STL/right_handumi/camera_mount.stl")
     iso, side, back, front = (1, -1.3, 0.9), (1, 0, 0.05), (0.2, -0.3, -1), (0.15, -0.25, 1)
-    sheet([([(orig, RED)], "your wrist mount (input)", (1, -1, 0.8)),
+    sheet([([(orig, RED)], "source wrist mount (input)", (1, -1, 0.8)),
            ([(wrist, RED)], "adapted: HandUMI hinge, tab removed", iso),
            ([(wrist, RED), (d405_body(2), GREY)], "with D405", iso),
            ([(wrist, RED), (d405_body(2), GREY)], "side (hinge axis = X)", side),
            ([(wrist, RED)], "back: 2x M3 for the D405, 20 mm", back),
            ([(wrist, RED), (d405_body(2), GREY)], "front (camera view direction)", front)],
           ROOT / "docs/img/wrist_d405_mount_handumi.png")
-    sheet([([(stock, RED)], "HandUMI camera_mount (IMX335)", iso),
-           ([(plate, RED)], "d405_camera_mount (plate)", iso),
-           ([(plate, RED), (d405_body(4), GREY)], "plate with D405", iso),
-           ([(plate, RED), (d405_body(4), GREY)], "side (hinge axis = X)", side),
-           ([(plate, RED)], "back: counterbored 2x M3", back),
-           ([(plate, RED), (d405_body(4), GREY)], "front", front)],
-          ROOT / "docs/img/d405_camera_mount.png")
 
 
 if __name__ == "__main__":
