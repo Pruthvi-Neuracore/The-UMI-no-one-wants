@@ -74,8 +74,18 @@ cd tools && python assembly.py --opening 0 --check && python render_docs.py
 Every printed part is analysed in `tools/fea.py`: linear-elastic FEA in PLA (E = 3 GPa), with quadratic tetrahedra
 meshed from the STEP files and checked against hand calculations. Load cases are 15 g knocks on the camera, a 30 N
 grip with the tip's 70 mm lever, a 40 N finger press, and hand and VR-controller loads. Safety factors are against
-30 MPa (along layers) and 15 MPa (across layers). Results so far are in [`docs/fea_results.csv`](docs/fea_results.csv);
-**the analysis is still running**, and the table will be completed in the next update.
+30 MPa (along layers) and 15 MPa (across layers). Results are in [`docs/fea_results.csv`](docs/fea_results.csv), with stress maps in `docs/img/fea/`.
+
+| Part | Load case | Safety factor (along / across layers) |
+|---|---|---|
+| Main support | camera knock, 15 g (vertical / sideways / fore-aft) | 29 / 14, 20 / 10, 17 / 8 |
+| Main support | grip push on the rods, 2 × 30 N, end wall only (conservative) | 3.4 / 1.7 |
+| Finger link | 30 N grip on the tip, 70 mm lever | 5.5 / 2.7 |
+| Crank plate | 30 N on each crank pin | 52 / 26 |
+| Connecting link | 40 N pull | 65 / 32 |
+
+The D405 mount, end cover, electronics box and lid, hand support base and controller support have load cases set up in
+`tools/fea.py` but weren't run (`python tools/fea.py d405 end_cover electronics hand_support controller`).
 
 ## License
 
