@@ -27,6 +27,8 @@ class TipSet:
     v12: str               # tip axis carrying the 12 mm spacing (link z)
     u_offsets: tuple = (0.0,)   # for 2-hole sets: which link column (x = ±4) the pair uses
     robot: str = ""
+    travel: str = ""        # native axis the jaws close along (defaults to u8)
+    lr_sign: int = 1        # +1: the LEFT file sits at +travel from the RIGHT file in the source; 0: same place
 
 
 TIP_SETS = [
@@ -38,30 +40,32 @@ TIP_SETS = [
     # the TPU inserts are modelled in a different frame from the backbones, so only the backbones are placed
     TipSet("TRLC Dream gripper", "Dream-Gripper", ["TRLC-Dream-Gripper-RIGHT-Backbone.step"],
            ["TRLC-Dream-Gripper-LEFT-Backbone.step"], "x", -9.0,
-           (-9.0, -72.2, 6.5), (-9.0, -72.2, 6.5), "y", "z", u_offsets=(4.0, -4.0), robot="trlc-dk1"),
+           (-9.0, -72.2, 6.5), (-9.0, -72.2, 6.5), "y", "z", u_offsets=(4.0, -4.0), robot="trlc-dk1", lr_sign=0),
     TipSet("Trossen WidowX AI", "Trossen-WidowXAI", ["WXAI-RIGHT-Gripper-backbone.step", "WXAI-RIGHT-Gripper-sock.step"],
            ["WXAI-LEFT-Gripper-backbone.step", "WXAI-LEFT-Gripper-sock.step"], "z", -69.8,
            (-24.7, -2.1, -69.8), (24.7, -2.1, -69.8), "x", "y"),
     # Open-ENPIRE universal compliant finger, adapted to the flange by redesign/enpire_tip.py (mirror pair)
     TipSet("Open-ENPIRE (UCG)", "Open-ENPIRE", ["ENPIRE-RIGHT-Jaw.step", "ENPIRE-RIGHT-Soft-Insert.step"],
            ["ENPIRE-LEFT-Jaw.step", "ENPIRE-LEFT-Soft-Insert.step"], "-y", -3.0,
-           (-8.9, -3.0, 12.0), (-8.9, -3.0, 12.0), "x", "z", robot="openarm"),
+           (-8.9, -3.0, 12.0), (-8.9, -3.0, 12.0), "z", "x", robot="openarm", lr_sign=0),
 ]
 
 
 def orientations(ts):
-    """Candidate rotations (tip frame -> link frame) and the in-plane offset of the pattern centre on the link."""
-    a, u, v = AX[ts.axis], AX[ts.u8], AX[ts.v12]
+    """Candidates (R, du, thumb_side). Both jaws share one rotation R (as in the source assembly): the screw axis maps
+    to the link's +y and the closing axis to ±x. The side that ends up toward the thumb link gets the thumb."""
+    a = AX[ts.axis]
+    tr = AX[ts.travel or ts.u8]
+    w = np.cross(a, tr)
     out = []
-    for su in (1, -1):
-        for sv in (1, -1):
-            # columns: images of the tip basis vectors a, u, v in the link frame
-            M_tip = np.column_stack([a, u, v])
-            M_link = np.column_stack([AX["y"], su * AX["x"], sv * AX["z"]])
-            R = M_link @ M_tip.T
-            if np.linalg.det(R) > 0.5:
-                for du in ts.u_offsets:
-                    out.append((R, du))
+    for s in (1, -1):
+        M_tip = np.column_stack([a, tr, w])
+        M_link = np.column_stack([AX["y"], s * AX["x"], np.cross(AX["y"], s * AX["x"])])
+        R = M_link @ np.linalg.inv(M_tip)
+        # thumb sits at -x (link) from the index; LEFT sits at lr_sign·travel from RIGHT in the source
+        thumb_side = "left" if ts.lr_sign * s < 0 else "right"
+        for du in ts.u_offsets:
+            out.append((R, du, thumb_side))
     return out
 
 

@@ -85,9 +85,9 @@ def assemble(opening=0.6, camera="wrist", tipset=None, support=None, crank_z=CRA
     RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
     add("thumb_link", step(R / "right_thumb_link.step"), T(RL, [-48.5, yt, 30.5]), WHITE)
     add("index_link", step(R / "right_index_middle_finger_link.step"), T(RL, [-48.5, yi, 30.5]), WHITE)
-    # record start/stop button: 12 x 12 tactile switch in the pod at the front of the index channel (right index: sx = +1)
+    # record start/stop button: 6 x 6 tactile switch flush in the index sleeve's inner wall (right index: sx = +1)
     bx_, by_, bz_ = FL.button_centre(1)
-    sw = Pos(bx_, by_ + 2.0, bz_) * Box(12.0, 4.0, 12.0) + Pos(bx_, by_ - 1.5, bz_) * Rot(90, 0, 0) * Cylinder(5.5, 3.0)
+    sw = Pos(bx_ - 1.75, by_, bz_) * Box(3.5, 6.0, 6.0) + Pos(bx_ + 0.5, by_, bz_) * Rot(0, 90, 0) * Cylinder(1.75, 1.0)
     add("record_button", sw, T(RL, [-48.5, yi, 30.5]), "#d23b2a")
     for nm, yc in (("thumb", yt), ("index", yi)):
         for x in (-28.0, -8.0):
@@ -124,17 +124,18 @@ def assemble(opening=0.6, camera="wrist", tipset=None, support=None, crank_z=CRA
     for nm, b in boards.items():
         add(nm, b, T(RB, [cxy[0], cxy[1], 0.0]), PCB)
 
-    # D405 cradle: bolted flat to the underside of the main support (exported in this frame); camera at the fixed pose
+    # D405 mount on the main support's camera post: Ø12 / M4 hinge, camera at the 65° pose in redesign/hinge.py
     if camera == "wrist":
-        add("camera_mount", step(R / "d405_wrist_mount.step"), np.eye(4), WHITE)
         Rc, tc = H.camera_pose()
+        add("camera_mount", step(R / "d405_wrist_mount.step"), T(Rc, tc), WHITE)
         add("d405", d405_dummy(2.0), T(Rc, tc), DARK)
 
     # gripper tips on the finger-link flange (link y = 0 face); orientation from tips.fit_tipset()
     ts, choice = tipset if tipset is not None else (TIP_SETS[0], None)
-    choice = choice or best_orientation(ts)
-    for nm, files, centre, yc in (("thumb", ts.left, ts.centre_l, yt), ("index", ts.right, ts.centre_r, yi)):
-        R_t, du = choice[nm]
+    R_t, du, thumb_side = choice or best_orientation(ts)
+    side_files = {"left": (ts.left, ts.centre_l), "right": (ts.right, ts.centre_r)}
+    index_side = "right" if thumb_side == "left" else "left"
+    for nm, (files, centre), yc in (("thumb", side_files[thumb_side], yt), ("index", side_files[index_side], yi)):
         Tt = link_transform(R_t, centre, ts.axis, ts.face, du)
         TL = T(RL, [-48.5, yc, 30.5])
         for k, fn in enumerate(files):
@@ -144,57 +145,53 @@ def assemble(opening=0.6, camera="wrist", tipset=None, support=None, crank_z=CRA
 
 
 def best_orientation(ts, cache={}):
-    """Pick, per tip set, the orientation where the two jaws face each other: smallest gap at full close, no overlap."""
+    """Pick the shared jaw rotation where the jaws face each other: they get closest (smallest opening without
+    overlap, then smallest gap). Checked with meshes, so it's fast."""
+    import trimesh
     if ts.name in cache:
         return cache[ts.name]
-    if ts.folder == "Open-ENPIRE":
-        cache[ts.name] = _fit_by_inserts(ts)
-        return cache[ts.name]
-    cands = orientations(ts)
-    _, _, _, yt, yi = link_positions(0.0)
     RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
+    files = {"left": (ts.left, ts.centre_l), "right": (ts.right, ts.centre_r)}
     best = None
-    for Rr, dur in cands:
-        for Rl, dul in cands:
-            sh = []
-            for files, centre, yc, Rt, du in ((ts.left, ts.centre_l, yt, Rr, dur), (ts.right, ts.centre_r, yi, Rl, dul)):
-                Tt = link_transform(Rt, centre, ts.axis, ts.face, du)
-                sh.append(place(step(HW / "STEP/gripper_tips" / ts.folder / files[0]), T(RL, [-48.5, yc, 30.5]) @ Tt))
-            ov = overlap(sh[0], sh[1])
-            gap = sh[0].distance_to(sh[1]) if ov < 0.5 else -ov
-            score = gap if gap >= 0 else 1e6 - gap
-            if best is None or score < best[0]:
-                best = (score, {"thumb": (Rr, dur), "index": (Rl, dul)})
-    cache[ts.name] = best[1]
-    return best[1]
-
-
-def _fit_by_inserts(ts, opening=0.5):
-    """Fast fit for dense, thick mesh tips: the soft inserts (gripping faces) of the two jaws face each other (closest
-    centroids) with no overlap between the rigid jaws, checked at half open (mesh booleans instead of exact solids)."""
-    import trimesh
-    _, _, _, yt, yi = link_positions(opening)
-    RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
-    stl = HW / "STL/gripper_tips" / ts.folder
-    mesh = {f: trimesh.load(stl / f.replace(".step", ".stl")) for f in ts.left + ts.right}
-    cands = orientations(ts)
-    best = None
-    for Rr, dur in cands:
-        for Rl, dul in cands:
+    for R_t, du, thumb_side in orientations(ts):
+        index_side = "right" if thumb_side == "left" else "left"
+        for op in np.arange(0.0, 0.5, 0.05):
+            _, _, _, yt, yi = link_positions(op)
             placed = []
-            for files, centre, yc, Rt, du in ((ts.left, ts.centre_l, yt, Rr, dur), (ts.right, ts.centre_r, yi, Rl, dul)):
-                M = T(RL, [-48.5, yc, 30.5]) @ link_transform(Rt, centre, ts.axis, ts.face, du)
-                jaw, soft = mesh[files[0]].copy(), mesh[files[1]].copy()
-                jaw.apply_transform(M)
-                soft.apply_transform(M)
-                placed.append((jaw, soft))
-            d = np.linalg.norm(placed[0][1].centroid - placed[1][1].centroid)
-            if best is not None and d >= best[0]:
-                continue
-            ov = trimesh.boolean.intersection([placed[0][0], placed[1][0]], engine="manifold").volume
-            if ov < 1.0:
-                best = (d, {"thumb": (Rr, dur), "index": (Rl, dul)})
-    return best[1]
+            for side, yc in ((thumb_side, yt), (index_side, yi)):
+                fl, centre = files[side]
+                m = _tip_mesh(ts.folder, fl[0]).copy()
+                m.apply_transform(T(RL, [-48.5, yc, 30.5]) @ link_transform(R_t, centre, ts.axis, ts.face, du))
+                placed.append(m)
+            if all(m.is_volume for m in placed):
+                ov = trimesh.boolean.intersection(placed, engine="manifold").volume
+            else:                                                        # exact solids for non-watertight meshes
+                sol = [place(step(HW / "STEP/gripper_tips" / ts.folder / files[sd][0][0]),
+                             T(RL, [-48.5, yc, 30.5]) @ link_transform(R_t, files[sd][1], ts.axis, ts.face, du))
+                       for sd, yc in ((thumb_side, yt), (index_side, yi))]
+                ov = overlap(sol[0], sol[1])
+            if ov < 0.5:
+                from scipy.spatial import cKDTree
+                gap = float(cKDTree(placed[1].vertices).query(placed[0].vertices)[0].min())
+                if best is None or (op, gap) < (best[0], best[1]):
+                    best = (op, gap, (R_t, du, thumb_side))
+                break
+    cache[ts.name] = best[2]
+    return best[2]
+
+
+def _tip_mesh(folder, fname, cache={}):
+    import trimesh
+    key = (folder, fname)
+    if key not in cache:
+        stl = HW / "STL/gripper_tips" / folder / fname.replace(".step", ".stl")
+        if stl.exists():
+            cache[key] = trimesh.load(stl)
+        else:
+            sh = step(HW / "STEP/gripper_tips" / folder / fname)
+            v, f = sh.tessellate(0.1, 0.3)
+            cache[key] = trimesh.Trimesh(np.array([(q.X, q.Y, q.Z) for q in v]), np.array(f))
+    return cache[key]
 
 
 ALLOWED = [{"rod", "lm4uu"}, {"lm4uu", "thumb_link"}, {"lm4uu", "index_link"}, {"rod", "thumb_link"},
@@ -205,7 +202,9 @@ ALLOWED = [{"rod", "lm4uu"}, {"lm4uu", "thumb_link"}, {"lm4uu", "index_link"}, {
            {"camera_mount", "d405"}, {"imu", "electronics_box"},   # IMU sits in its floor pocket
            {"thumb_link", "tip_thumb"}, {"index_link", "tip_index"},   # bolted face contact (0.03 mm sliver)
            {"tip_thumb", "tip_thumb_1"}, {"tip_index", "tip_index_1"},  # pads / socks sit on their jaws
-           {"record_button", "index_link"}]                                # switch sits in its pod          # the D405 is a visual stand-in (body only, no fillet at the floor)
+           {"record_button", "index_link"},                                # switch sits in its pod
+           # the jaws meet before the mechanism's own stop; the closing point is where the tips touch
+           {"tip_thumb", "tip_index"}, {"tip_thumb", "tip_index_1"}, {"tip_thumb_1", "tip_index"}, {"tip_thumb_1", "tip_index_1"}]          # the D405 is a visual stand-in (body only, no fillet at the floor)
 
 
 def interferences(parts, tol=1.0):
@@ -286,11 +285,11 @@ def cables(opening=0.55):
     RL = np.array([[0, -1, 0], [-1, 0, 0], [0, 0, -1]], float)
     index = lambda p: RL @ np.array(p, float) + np.array([-48.5, yi, 30.5])          # index-link frame -> M
     routes = {
-        "record_button": ([index(tuple(np.array(FL.button_centre(1)) + np.array([0, 7.0, 12.0]))),
-                           index((12.5, 2.0, 12.0)), index((10.0, -20.0, 20.0)), (-20.0, yi - 4.0, 14.0),
+        "record_button": ([index((-9.5, FL.BUTTON_Y + 2.0, FL.BUTTON_Z)), index((-12.0, FL.BUTTON_Y + 2.0, FL.BUTTON_Z)),
+                           index((-11.0, -20.0, 6.0)), index((-6.0, -30.0, 14.0)), (-20.0, yi - 4.0, 12.0),
                            (5.0, 60.0, -6.0), (12.0, 95.0, -8.0), bx(wall - 6, -26.0, 8.5), bx(wall + 5, -26.0, 8.5)], 1.0),
-        "d405_usb": ([cam((21.0, 0.0, 12.0)), cam((34.0, 0.0, 12.0)), cam((34.0, 0.0, -6.0)), (-30.0, 102.0, -40.0),
-                      (5.0, 92.0, -36.0), bx(wall - 8, 0.0, 18.5), bx(wall + 6, 0.0, 18.5)], 2.0),
+        "d405_usb": ([cam((0.0, 21.0, 9.0)), cam((0.0, 34.0, 9.0)), cam((0.0, 44.0, 2.0)), (-20.0, 84.0, -58.0),
+                      (5.0, 80.0, -40.0), bx(wall - 8, 0.0, 18.5), bx(wall + 6, 0.0, 18.5)], 2.0),    # out of the top window
         "servo": ([(-24.0, 86.0, -24.0), (-8.0, 96.0, -22.0), (8.0, 104.0, -12.0), bx(wall - 6, -30.0, 8.5),
                    bx(wall + 5, -30.0, 8.5)], 1.2),
         "usb_c_to_laptop": ([bx(10.5, EB.BOX[1] / 2 - 4, 10.0), bx(10.5, EB.BOX[1] / 2 + 10, 10.0),

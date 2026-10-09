@@ -54,8 +54,8 @@ def button_closeup(opening=0.35):
     RL = np.array([[0, -1, 0], [-1, 0, 0], [0, 0, -1]], float)
     to_m = lambda q: RL @ np.array(q, float) + np.array([-48.5, yi, 30.5])
     c = np.array(FL.button_centre(1))
-    tip = to_m(c + np.array([0.0, -2.0, 0.0]))
-    tail = to_m(c + np.array([0.0, -24.0, 0.0]))
+    tip = to_m(c + np.array([1.5, 0.0, 0.0]))                         # the finger pad presses the wall (-x)
+    tail = to_m(c + np.array([16.0, 0.0, 0.0]))
     arrow = pv.Arrow(start=tail, direction=tip - tail, scale=float(np.linalg.norm(tip - tail)), tip_length=0.3, shaft_radius=0.04)
     pl = plotter((1, 1), (1400, 1000))
     pl.set_background(BG)
@@ -67,7 +67,7 @@ def button_closeup(opening=0.35):
     pl.reset_camera()
     pl.camera.focal_point = tuple(to_m(c))
     pl.camera.zoom(1.6)
-    pl.add_point_labels([to_m(c + np.array([0, 0, 14.0]))], ["record button: click to start, click again to stop"],
+    pl.add_point_labels([to_m(c + np.array([0, 0, 14.0]))], ["record button (in the sleeve wall): press to start, press again to stop"],
                         font_size=22, text_color="black", point_size=1, shape_opacity=0.85, always_visible=True)
     pl.screenshot(str(IMG / "record_button.png"))
 

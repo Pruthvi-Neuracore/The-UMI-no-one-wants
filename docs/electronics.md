@@ -7,7 +7,7 @@ Everything on the device goes through a small USB 3 hub inside the electronics b
                             ├── USB 3 hub (in the box) ══ one USB-C cable ══ laptop
  Raspberry Pi Pico 2 ──USB──┘
    ├── I2C ── IMU (BNO085-class, in the box floor, rigid to the frame)
-   ├── GPIO ── record button (thumb link: press to start, press again to stop)
+   ├── GPIO ── record button (index sleeve: press to start, press again to stop)
    └── UART (half-duplex) ── STS3215 servo bus (gripper width encoder)
 ```
 
@@ -23,8 +23,8 @@ IMU and gripper-width data. Both arrive on the laptop over the same cable and ar
 | BNO085 IMU breakout | In the box floor pocket (28 × 24 mm). **Check your board's outline**; secure it with double-sided tape or epoxy so it can't move |
 | USB 3 hub board, USB-C upstream | Bay is 38 × 42 mm, up to ~14 mm tall (VL817-type 4-port boards). **Check your board's size** before printing |
 | Short cables | D405 USB-C to USB-A (~15 cm, USB 3), Pico micro-USB to USB-A (~10 cm, right-angle helps) |
-| 12 × 12 mm tactile switch + round cap | Record start / stop. Sits in the pod at the front of the thumb channel |
-| 2-core wire, ~30 cm, flexible | Button to the Pico, with slack for the thumb link's travel |
+| 6 × 6 mm tactile switch, stiff (~250–320 gf) | Record start / stop. Set flush in the inner wall of the index sleeve |
+| 2-core wire, ~30 cm, flexible | Button to the Pico, with slack for the index link's travel |
 | 74LVC1G125 or 1 kΩ resistor | Joins Pico TX/RX onto the servo's single-wire bus |
 | 2× M3×8 + 2 M3 heat-set inserts | Box to arm, from the hand side (counterbored, heads sit flush) |
 | 4× M3×6 + 4 M3 heat-set inserts | Lid to box |

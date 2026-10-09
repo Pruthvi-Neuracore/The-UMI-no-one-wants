@@ -18,7 +18,9 @@ OUT = Path(__file__).resolve().parents[1] / "hardware"
 CUT_Y, PLATE_Y = -8.0, -3.0                  # remove y > CUT_Y (the mount tab), add a plate from CUT_Y to PLATE_Y
 X0, X1, Z0, Z1 = -24.7, 6.9, -4.3, 28.3      # base block outline
 CX, CZ = (X0 + X1) / 2, (Z0 + Z1) / 2        # hole-pattern centre
-HOLES = [(CX + dx, CZ + dz) for dx in (-6.0, 0.0, 6.0) for dz in (-12.0, 12.0)]
+# the fingers close along native z (soft inserts face each other), which maps to the flange's x (6 mm pitch);
+# native x maps to the flange's z (24 mm pitch)
+HOLES = [(CX + dx, CZ + dz) for dx in (-12.0, 12.0) for dz in (-6.0, 0.0, 6.0)]
 HOLE_DEPTH = 32.0
 
 
@@ -45,7 +47,7 @@ def build():
 def main():
     hard, soft = build()
     mirror = np.eye(4)
-    mirror[0, 0], mirror[0, 3] = -1.0, 2 * CX                         # mirror about the pattern centre (x = CX)
+    mirror[2, 2], mirror[2, 3] = -1.0, 2 * CZ                         # mirror across the closing axis (z = CZ)
     for t in ("STL", "STEP"):
         (OUT / t / "gripper_tips/Open-ENPIRE").mkdir(parents=True, exist_ok=True)
     for side, M in (("RIGHT", np.eye(4)), ("LEFT", mirror)):

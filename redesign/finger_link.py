@@ -11,8 +11,8 @@ holes along Y):
 
 Flange width is set so the two flanges keep a 3.6 mm gap at full close.
 
-The index/middle link carries a pod for a 12 x 12 mm tactile switch at the front end of its finger channel, facing
-the fingertip, so the index finger clicks it by curling forward (record start / stop, wired to the Pico).
+The index/middle link has a 6 x 6 mm tactile switch set flush into the inner wall of its sleeve, where the index finger
+pad rests: press with the finger to click (record start / stop, wired to the Pico).
 A finger hood arches over the finger channel on each link (one channel on the thumb link, a double one on the
 index/middle link) so the finger stays put; print the links in PETG or TPU-friendly settings if the hood feels tight.
 """
@@ -68,28 +68,30 @@ def finger_hood(thumb, sx):
     return hood
 
 
-BUTTON = 12.0                    # 12 x 12 mm tactile switch (body ~3.5-4 mm thick, round cap)
-BUTTON_POD_Y = (-14.0, -5.5)     # pod at the front end of the index channel, just behind the tip flange
-BUTTON_Z = -22.0                 # centred on the index/middle channel
+BUTTON = 6.0                     # 6 x 6 mm tactile switch (use a stiff one, ~250-320 gf), body 3.5 mm
+BUTTON_Y, BUTTON_Z = -32.0, -22.0   # middle of the sleeve, between the two finger channels
+BUTTON_FACE_X = -0.8             # depth of the channel wall there (index channel centred at x = 10·sx)
 
 
 def button_centre(sx):
-    """Centre of the switch face (link frame) on the index link; the actuator faces -y, toward the fingertip."""
-    return (12.5 * sx, BUTTON_POD_Y[0], BUTTON_Z)
+    """Centre of the switch face (link frame): flush in the channel wall the finger presses, facing the finger."""
+    return (BUTTON_FACE_X * sx, BUTTON_Y, BUTTON_Z)
 
 
-def button_pod(sx):
-    """Pod for a 12 x 12 tactile switch at the front of the index/middle channel, facing the fingertip, so the index
-    finger clicks it by curling forward. sx: channel side (+1 right index, -1 left index). Wires leave from the back."""
-    x0, x1 = sorted((sx * 6.0, sx * 21.0))
-    y0, y1 = BUTTON_POD_Y
-    pod = box(x0, x1, y0, y1, -36.0, -8.0)
-    pod = fillet(pod.edges().filter_by(Axis.Y), 3.0)
-    cx, _, cz = button_centre(sx)
-    pod -= box(cx - BUTTON / 2 - 0.2, cx + BUTTON / 2 + 0.2, y0 - 0.1, y0 + 4.2, cz - BUTTON / 2 - 0.2, cz + BUTTON / 2 + 0.2)
-    pod -= box(cx - 1.5, cx + 1.5, y0 + 4.0, y1 + 0.1, cz - 1.5, cz + 1.5)            # wire channel to the back
-    pod -= box(cx - 1.5, cx + 1.5, y1 - 3.0, y1 + 0.1, cz - 1.5, -7.9)                 # ...and up out of the pod
-    return pod
+def button_parts(sx):
+    """(add, cut) for a 6 x 6 tactile switch set flush into the inner wall of the index sleeve, where the finger pad
+    rests. A 3 mm boss on the other face of the paddle backs the pocket; the wires leave through it.
+    sx: channel side (+1 right index, -1 left index)."""
+    cx, cy, cz = button_centre(sx)
+    x_back = -6.0 * sx                                                   # other face of the paddle
+    boss = box(min(x_back, x_back - 3.0 * sx), max(x_back, x_back - 3.0 * sx), cy - 7.0, cy + 7.0, cz - 7.0, cz + 7.0)
+    boss = fillet(boss.edges().filter_by(Axis.X), 2.5)
+    depth = 3.6                                                          # body sunk into the wall, actuator proud
+    x0, x1 = sorted((cx + 0.6 * sx, cx - depth * sx))
+    pocket = box(x0, x1, cy - BUTTON / 2 - 0.2, cy + BUTTON / 2 + 0.2, cz - BUTTON / 2 - 0.2, cz + BUTTON / 2 + 0.2)
+    w0, w1 = sorted((cx, x_back - 3.5 * sx))
+    wires = box(w0, w1, cy + 1.0, cy + 3.0, cz - 1.5, cz + 1.5)          # through the paddle and the boss
+    return boss, pocket + wires
 
 
 def finger_link(src):
@@ -107,7 +109,8 @@ def finger_link(src):
     sx = (-1 if thumb else 1) * (-1 if name.startswith("left") else 1)
     s = s + neck + flange + finger_hood(thumb, sx)
     if not thumb:
-        s = s + button_pod(sx)
+        add, cut = button_parts(sx)
+        s = s + add - cut
     for x, z in M2:
         s -= hole_y(x, z, 2.1, 6.0)
     for x, z in M3:
