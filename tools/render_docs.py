@@ -76,7 +76,7 @@ def tip_gallery():
     """One render per tip set (closed and open)."""
     from assembly import best_orientation
     from tips import TIP_SETS
-    for ts in TIP_SETS:
+    for ts in [t for t in TIP_SETS if t.folder in ("AgileX-Piper", "Open-ENPIRE")]:   # sets shown in the README
         slug = ts.folder.lower()
         hero(0.15, (ts, best_orientation(ts)), f"tips_{slug}.png", views=((-0.9, -1.0, -0.8),), size=(1200, 1000))
 

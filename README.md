@@ -42,20 +42,18 @@ Swap the tips to match the robot you'll deploy on. The jaws on the device then h
 
 | Tips on the device | Robot |
 |---|---|
-| ![](docs/img/tips_agilex-piper.png) **AgileX Piper** | ![](docs/img/robot_piper.png) |
-| ![](docs/img/tips_dream-gripper.png) **TRLC Dream gripper** | ![](docs/img/robot_trlc-dk1.png) **TRLC DK1** |
-| ![](docs/img/tips_arx-x5-2023.png) **ARX X5** | |
-| ![](docs/img/tips_trossen-widowxai.png) **Trossen WidowX AI** | |
-| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant finger (UCG)** | ![](docs/img/robot_openarm.png) **OpenArm** |
+| ![](docs/img/tips_agilex-piper.png) **AgileX Piper tips** | ![](docs/img/robot_piper.png) **AgileX Piper** |
+| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant fingers** | ![](docs/img/robot_hand_e_enpire.jpg) **Robotiq Hand-E with Open-ENPIRE fingers** |
+| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant fingers** | ![](docs/img/robot_openarm_enpire.png) **OpenArm with Open-ENPIRE fingers** |
 
 The Open-ENPIRE tips are the compliant finger from [Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper),
-which also has matching fingers for OpenArm, Robotiq Hand-E / 2F-140 and I2RT YAM. Here the finger's robot mount is
-replaced with a plate for the universal flange (`redesign/enpire_tip.py`); files are in `hardware/STL/gripper_tips/Open-ENPIRE/`.
-The ENPIRE fingers are about 32 mm thick, so the two jaws meet (fully closed) when the finger links are ~30 mm apart,
-a little before the mechanism's own stop.
+which has matching fingers for OpenArm, Robotiq Hand-E / 2F-140 and I2RT YAM, so the same finger shape is on the device
+and on the robot. Here the finger's robot mount is replaced with a plate for the universal flange
+(`redesign/enpire_tip.py`); files are in `hardware/STL/gripper_tips/Open-ENPIRE/`. The ENPIRE fingers are about 32 mm
+thick, so the two jaws meet (fully closed) when the finger links are ~30 mm apart, a little before the mechanism's own stop.
 
 Robot renders are made with `tools/robots.py` from published open-source robot models (sources in
-[`hardware/NOTICE.md`](hardware/NOTICE.md)).
+[`hardware/NOTICE.md`](hardware/NOTICE.md)); the Hand-E photo is from the Open-ENPIRE-Gripper repository.
 
 ## Parts
 
