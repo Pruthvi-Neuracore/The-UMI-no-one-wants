@@ -13,15 +13,17 @@ your index finger, and a single USB cable to your laptop.
   range is 7 cm). The camera cable leaves from the top window and runs back into the electronics box.
 - **Finger sleeves:** each finger link has a sleeve that wraps the finger, so the fingers stay in place while you open and
   close the gripper.
-- **Record button:** a 6 × 6 mm tactile switch sits flush in the inner wall of the index-finger sleeve, under the finger
-  pad. Press it with your index finger, once to start recording and again to stop. It's wired to the Pico.
+- **Record button:** a 6 × 6 mm tactile switch sits in the inner wall of the index-finger sleeve under a soft, domed
+  TPU pad where your finger pad rests. Press it with your index finger, once to start recording and again to stop. It's wired to the Pico.
 - **One cable:** a closed electronics box holds a USB 3 hub, the Pico 2 and the IMU. The camera and the Pico both connect to
   the hub, and one USB-C cable goes to the laptop. See [docs/electronics.md](docs/electronics.md).
 - **Universal tip flange:** each finger link has a 20 × 30 mm flange with M2 (8 × 12), M3 (12 × 24 + centre pair) and M4
   (12 mm pair) hole patterns, so you can bolt on tips that match different robot grippers.
 - **Moulded look:** every printed part is softly rounded: a blended T-plate outline, rounded slot rims, a concave blend into
   the end wall; the end cover and electronics box match.
-- **Checked in a full assembly:** the gripper is clash-checked closed, half-open and fully open.
+- **Small PG mark:** every printed part has a small PG logo engraved 0.2 mm deep on one visible face, as a subtle
+  maker's mark. The gripper tips stay plain.
+- **Checked in a full assembly:** the gripper is clash-checked closed, half-open and fully open with both tip sets.
 
 ## Record button
 
@@ -30,8 +32,10 @@ your index finger, and a single USB cable to your laptop.
 </p>
 
 A 6 × 6 mm tactile switch is set into the inner wall of the index-finger sleeve, where the finger pad rests, under a soft
-TPU cover that sits flush with the wall (a nub on its underside presses the switch). A cavity behind the switch leaves
-room for its legs and solder joints and opens at the back for soldering. Press it with your index finger: **press once to start recording, press again to stop.** It's wired to the Pico (GP15 to ground,
+TPU cover: a 12 × 9 mm oval pad with a gentle 0.8 mm dome and rounded rim, so nothing sharp touches your finger, and a nub
+underneath that presses the switch. The cover sits in a matching oval recess, and a rounded boss on the outside of the paddle
+gives the switch its depth. A cavity behind the switch leaves room for its legs and solder joints and opens at the back
+for soldering. Press it with your index finger: **press once to start recording, press again to stop.** It's wired to the Pico (GP15 to ground,
 internal pull-up), so the recording software only has to watch one input; see [docs/electronics.md](docs/electronics.md).
 That wall is also the one your finger pushes to close the gripper, so use a stiff switch (about 250–320 gf); the
 software can tell a deliberate press from a grasp by its duration. The wires leave through the back of the paddle and
@@ -39,22 +43,36 @@ run along the frame to the electronics box with a little slack for the finger li
 
 ## Tips for different robots
 
-Swap the tips to match the robot you'll deploy on. The jaws on the device then have the same shape as the robot's fingers.
+Swap the tips to match the robot you'll deploy on, so the jaws on the device have the same shape as the robot's fingers.
 
 | Tips on the device | Robot |
 |---|---|
-| ![](docs/img/tips_agilex-piper.png) **AgileX Piper tips** | ![](docs/img/robot_piper.png) **AgileX Piper** |
+| ![](docs/img/tips_robotiq-hand-e.png) **Robotiq Hand-E fingers** | ![](docs/img/robot_abb_gofa.png) **ABB GoFa CRB 15000 (dual) with Hand-E** |
+| ![](docs/img/tips_robotiq-hand-e.png) **Robotiq Hand-E fingers** | ![](docs/img/robot_fanuc_crx5ia.png) **FANUC CRX-5iA (dual) with Hand-E** |
+| ![](docs/img/tips_robotiq-hand-e.png) **Robotiq Hand-E fingers** | ![](docs/img/robot_ur5.png) **UR5 (dual) with Hand-E** |
 | ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant fingers** | ![](docs/img/robot_hand_e_enpire.jpg) **Robotiq Hand-E with Open-ENPIRE fingers** |
-| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant fingers** | ![](docs/img/robot_openarm_enpire.png) **OpenArm with Open-ENPIRE fingers** |
 
-The Open-ENPIRE tips are the compliant finger from [Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper),
-which has matching fingers for OpenArm, Robotiq Hand-E / 2F-140 and I2RT YAM, so the same finger shape is on the device
-and on the robot. Here the finger's robot mount is replaced with a plate for the universal flange
-(`redesign/enpire_tip.py`); files are in `hardware/STL/gripper_tips/Open-ENPIRE/`. The ENPIRE fingers are about 32 mm
-thick, so the two jaws meet (fully closed) when the finger links are ~30 mm apart, a little before the mechanism's own stop.
+- **Hand-E tips** (`hardware/STL/gripper_tips/Robotiq-Hand-E/`): the actual Robotiq Hand-E finger on a flange plate
+  (`cad/hande_tip.py`). Print it twice; the index jaw is the same part turned 180°, so the stepped fingertips face each other.
+- **Open-ENPIRE tips** (`hardware/STL/gripper_tips/Open-ENPIRE/`): the compliant finger from
+  [Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper) with its robot mount replaced by a flange plate
+  (`cad/enpire_tip.py`). The matching robot-side fingers for Robotiq Hand-E, Robotiq 2F-140, OpenArm and I2RT YAM are in
+  `Open-ENPIRE/robot/` (mm), so the same finger shape is on the device and on the robot. The ENPIRE fingers are about
+  32 mm thick, so the jaws meet a little before the mechanism's own stop.
 
-Robot renders are made with `tools/robots.py` from published open-source robot models (sources in
-[`hardware/NOTICE.md`](hardware/NOTICE.md)); the Hand-E photo is from the Open-ENPIRE-Gripper repository.
+Robot renders are made with `cad/robots.py` from the robots' published descriptions (sources in
+[`hardware/NOTICE.md`](hardware/NOTICE.md)).
+
+## Assembly
+
+The full assembled device (right hand, half open) is in [`assembly/`](assembly/), once per tip set:
+
+| File | Use |
+|---|---|
+| `umi_right_robotiq-hand-e.glb`, `umi_right_open-enpire.glb` | Coloured, one node per part, metres, Y up; drag into Onshape, Blender or any glTF viewer |
+| `umi_right_robotiq-hand-e.stl`, `umi_right_open-enpire.stl` | One merged mesh in mm, Z up |
+
+The left hand is the mirror image. Regenerate with `python cad/export_assembly.py [--opening 0..1]`.
 
 ## Parts
 
@@ -85,39 +103,39 @@ tips from `hardware/STL/gripper_tips/`. STEP files for every part are in `hardwa
 
 ## Hardware
 
-Base mechanics, rods, bearings, servo and fasteners are listed in [bom/README.md](bom/README.md), with these changes:
+Everything to buy is in [docs/bom.md](docs/bom.md). Notes:
 
-- **Camera:** Intel RealSense D405 instead of the IMX335 camera. Fix it with 2× M3×5 screws into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth).
+- **Camera:** Intel RealSense D405. Fix it with 2× M3×5 screws into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth).
 - **Camera hinge:** 1× M4×30 bolt with a nyloc nut.
 - **Record button:** 1× 6 × 6 mm tactile switch (stiff, ~250–320 gf), ~30 cm of thin, flexible 2-core wire, and the
   `button_cover_tpu.stl` cover printed in TPU 95A.
-- **Electronics:** Raspberry Pi Pico 2, a BNO085 IMU, a small USB 3 hub and short cables. This replaces the servo controller board and its power supply. Full list and wiring: [docs/electronics.md](docs/electronics.md).
+- **Electronics:** Raspberry Pi Pico 2, a BNO085 IMU, a small USB 3 hub and short cables. No separate servo controller or power supply. Full list and wiring: [docs/electronics.md](docs/electronics.md).
 
 ## Files
 
 | Path | What |
 |---|---|
-| `hardware/STL`, `hardware/STEP` | Printable parts and CAD |
-| `redesign/` | Sources: `restyle.py` (main support, end cover, finger links, box), `electronics_box.py`, `finger_link.py`, `hinge.py`, `logo.py`; the starting parts are in `redesign/source/` |
-| `d405_mount/` | Source for the D405 wrist mount and its input mesh |
-| `tools/assembly.py` | Builds the full assembly, clash-checks it (`--check`) and renders it |
-| `tools/render_docs.py` | Renders the images in this README |
-| `tools/tips.py`, `tools/robots.py` | Tip fitting on the flange; robot renders |
-| `tools/fea.py` | Strength analysis of every printed part (results in `docs/fea_results.csv`, stress maps in `docs/img/fea/`) |
-| `docs/electronics.md` | Electronics, wiring and power |
-| `bom/` | Bill of materials for the base mechanics |
+| `hardware/STL`, `hardware/STEP` | Printable parts (`right/`, `left/`, `gripper_tips/`) and CAD |
+| `assembly/` | Full assembly as GLB and STL |
+| `cad/` | Everything that builds the parts: `restyle.py` (main support, end cover, finger links, box), `finger_link.py`, `electronics_box.py`, `hinge.py`, `d405_wrist_mount.py`, `hande_tip.py`, `enpire_tip.py`, `watermark.py`, `logo.py`; inputs in `cad/source/` |
+| `cad/assembly.py`, `cad/tips.py` | Full assembly with clash check (`--check`); tip fitting on the flange |
+| `cad/export_assembly.py`, `cad/render_docs.py`, `cad/robots.py` | Assembly export, README images, robot renders |
+| `cad/fea.py` | Strength analysis (results in `docs/fea_results.csv`, stress maps in `docs/img/fea/`) |
+| `docs/bom.md`, `docs/electronics.md` | Bill of materials; electronics, wiring and power |
 
-To rebuild everything (Python 3.12 with `build123d`, `trimesh`, `manifold3d`, `pyvista`):
+To rebuild everything (Python 3.12 with `build123d`, `trimesh`, `manifold3d`, `pyvista`), run in this order from `cad/`;
+`watermark.py` goes last because it engraves the parts the others write:
 
 ```bash
-python redesign/restyle.py
-python d405_mount/d405_wrist_mount.py d405_mount/input/wrist_camera_mount.stl
-cd tools && python assembly.py --opening 0 --check && python render_docs.py
+cd cad
+python restyle.py && python hande_tip.py && python enpire_tip.py && python d405_wrist_mount.py && python watermark.py
+python assembly.py --opening 0 --check && python export_assembly.py && python render_docs.py
+python robots.py /path/to/Neuracore_Robots
 ```
 
 ## Strength
 
-Every printed part is analysed in `tools/fea.py`: linear-elastic FEA in PLA (E = 3 GPa), with quadratic tetrahedra
+Every printed part is analysed in `cad/fea.py`: linear-elastic FEA in PLA (E = 3 GPa), with quadratic tetrahedra
 meshed from the STEP files and checked against hand calculations. Load cases are 15 g knocks on the camera, a 30 N
 grip with the tip's 70 mm lever, a 40 N finger press, and hand and VR-controller loads. Safety factors are against
 30 MPa (along layers) and 15 MPa (across layers). Results are in [`docs/fea_results.csv`](docs/fea_results.csv), with stress maps in `docs/img/fea/`.
@@ -131,7 +149,7 @@ grip with the tip's 70 mm lever, a 40 N finger press, and hand and VR-controller
 | Connecting link | 40 N pull | 65 / 32 |
 
 The D405 mount, end cover, electronics box and lid, hand support base and controller support have load cases set up in
-`tools/fea.py` but weren't run (`python tools/fea.py d405 end_cover electronics hand_support controller`).
+`cad/fea.py` but weren't run (`python cad/fea.py d405 end_cover electronics hand_support controller`).
 
 ## Grip force
 
