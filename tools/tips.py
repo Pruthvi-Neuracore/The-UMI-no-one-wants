@@ -1,0 +1,75 @@
+"""Fit the gripper-tip sets onto the finger-link flange.
+
+Each tip file lives in its own frame. A tip set is described by its mounting holes: the axis the screws run along
+(pointing from the mounting face into the tip body), the position of the mounting face on that axis, the hole-pattern
+centre, and which in-plane axis carries the 8 mm and the 12 mm spacing. fit() tries every rigid orientation that maps the
+pattern onto the link's (8 mm along link x, 12 mm along link z, tip growing along +y from the y = 0 face) and keeps the
+one where the two jaws face each other: smallest gap at full close without overlapping.
+"""
+from dataclasses import dataclass, field
+
+import numpy as np
+
+AX = {"x": np.array([1.0, 0, 0]), "y": np.array([0, 1.0, 0]), "z": np.array([0, 0, 1.0]), "-y": np.array([0, -1.0, 0])}
+
+
+@dataclass
+class TipSet:
+    name: str
+    folder: str
+    right: list            # files on the thumb link (main jaw first)
+    left: list             # files on the index/middle link
+    axis: str              # screw axis, pointing from the mounting face into the tip body
+    face: float            # coordinate of the mounting face along that axis
+    centre_r: tuple        # hole-pattern centre (3D) for the right file
+    centre_l: tuple
+    u8: str                # tip axis carrying the 8 mm spacing (link x)
+    v12: str               # tip axis carrying the 12 mm spacing (link z)
+    u_offsets: tuple = (0.0,)   # for 2-hole sets: which link column (x = ±4) the pair uses
+    robot: str = ""
+
+
+TIP_SETS = [
+    TipSet("AgileX Piper", "AgileX-Piper", ["Piper-RIGHT-Gripper-Jaw.step", "Piper-RIGHT-Gripper-Pad.step"],
+           ["Piper-LEFT-Gripper-Jaw.step", "Piper-LEFT-Gripper-Pad.step"], "x", 10.8,
+           (10.8, 172.7, -56.9), (10.8, 238.5, -56.9), "y", "z", robot="piper"),
+    TipSet("ARX X5", "ARX-X5-2023", ["ARX-X5-2023-RIGHT-Gripper.step"], ["ARX-X5-2023-LEFT-Gripper.step"], "x", -7.0,
+           (-7.0, -13.1, -64.45), (-7.0, -13.1, 14.45), "z", "y"),
+    # the TPU inserts are modelled in a different frame from the backbones, so only the backbones are placed
+    TipSet("TRLC Dream gripper", "Dream-Gripper", ["TRLC-Dream-Gripper-RIGHT-Backbone.step"],
+           ["TRLC-Dream-Gripper-LEFT-Backbone.step"], "x", -9.0,
+           (-9.0, -72.2, 6.5), (-9.0, -72.2, 6.5), "y", "z", u_offsets=(4.0, -4.0), robot="trlc-dk1"),
+    TipSet("Trossen WidowX AI", "Trossen-WidowXAI", ["WXAI-RIGHT-Gripper-backbone.step", "WXAI-RIGHT-Gripper-sock.step"],
+           ["WXAI-LEFT-Gripper-backbone.step", "WXAI-LEFT-Gripper-sock.step"], "z", -69.8,
+           (-24.7, -2.1, -69.8), (24.7, -2.1, -69.8), "x", "y"),
+    # Open-ENPIRE universal compliant finger, adapted to the flange by redesign/enpire_tip.py (mirror pair)
+    TipSet("Open-ENPIRE (UCG)", "Open-ENPIRE", ["ENPIRE-RIGHT-Jaw.step", "ENPIRE-RIGHT-Soft-Insert.step"],
+           ["ENPIRE-LEFT-Jaw.step", "ENPIRE-LEFT-Soft-Insert.step"], "-y", -3.0,
+           (-8.9, -3.0, 12.0), (-8.9, -3.0, 12.0), "x", "z", robot="openarm"),
+]
+
+
+def orientations(ts):
+    """Candidate rotations (tip frame -> link frame) and the in-plane offset of the pattern centre on the link."""
+    a, u, v = AX[ts.axis], AX[ts.u8], AX[ts.v12]
+    out = []
+    for su in (1, -1):
+        for sv in (1, -1):
+            # columns: images of the tip basis vectors a, u, v in the link frame
+            M_tip = np.column_stack([a, u, v])
+            M_link = np.column_stack([AX["y"], su * AX["x"], sv * AX["z"]])
+            R = M_link @ M_tip.T
+            if np.linalg.det(R) > 0.5:
+                for du in ts.u_offsets:
+                    out.append((R, du))
+    return out
+
+
+def link_transform(R, centre, face_axis, face, du=0.0):
+    """4x4 taking tip coordinates into link coordinates (mounting face on y = 0, pattern centred, shifted du in x)."""
+    c = np.array(centre, float)
+    c[np.abs(AX[face_axis]).argmax()] = face
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = np.array([du, 0.0, 0.0]) - R @ c
+    return T

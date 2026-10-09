@@ -1,9 +1,10 @@
 """Adapt the user's D405 wrist-camera cup to HandUMI's camera hinge.
 
 Input:  a mesh of the wrist camera mount (D405 cup + 4x M3 flat tab), in metres or mm.
-Output: the same cup with the tab removed and two Ø12 hinge lugs (M4 pivot, redesign/hinge.py)
-        on the edge the tab used to be on, plus a cable window in the top wall matching the
-        side windows. It mates with the redesigned main support's camera post.
+Output: a one-piece D405 cradle: the same cup (tab removed, cable window added in the top wall)
+        fused to a rounded column that bolts flat to the underside of the main support with
+        2x M3 (heat-set inserts in the column top). Exported in the main-support frame, at the
+        pose in redesign/hinge.py (looking at the base of the gripper fingers).
 
 The cup is re-oriented into HandUMI's camera_mount frame: cup floor outer face at z=0,
 D405 centred on (0, 0), camera looking +Z, hinge axis along X at (y, z) = hinge.AXIS_CAM.
@@ -48,20 +49,20 @@ def to_mesh(shape) -> trimesh.Trimesh:
     return trimesh.Trimesh(np.array([(q.X, q.Y, q.Z) for q in v]), np.array(t))
 
 
-def hinge_lugs() -> trimesh.Trimesh:
-    """Two Ø12 lugs on an M4 pivot that straddle the main support's 10 mm centre knuckle (redesign/hinge.py)."""
-    ay, az = H.AXIS_CAM
-    r = H.KNUCKLE_OD / 2
-    x_in = H.CENTRE_W / 2 + H.GAP
-    lugs = None
-    for s in (-1, 1):
-        x0, x1 = sorted((s * x_in, s * (x_in + H.LUG_W)))
-        w = x1 - x0
-        lug = Pos((x0 + x1) / 2, ay, az) * Rot(0, 90, 0) * Cylinder(r, w)
-        lug += Pos((x0 + x1) / 2, (ay - WALL_OUTER + 1.0) / 2, az) * Box(w, abs(ay + WALL_OUTER - 1.0), 2 * r)
-        lug -= Pos((x0 + x1) / 2, ay, az) * Rot(0, 90, 0) * Cylinder(H.BOLT_D / 2, w + 2)
-        lugs = lug if lugs is None else lugs + lug
-    return to_mesh(lugs)
+def pedestal() -> trimesh.Trimesh:
+    """Rounded column (main-support frame) from the plate underside down the back wall of the cup, fused along it.
+    It sits just in front of the servo (x = -28.2) and carries the two M3 inserts in its top face."""
+    R, t = H.camera_pose()
+    corners = np.array([t + R @ np.array([x, y, z]) for x in (-22.5, 22.5) for y in (-22.55, 22.55) for z in (0, 25)])
+    x_wall = corners[:, 0].max()                                   # back wall of the cup (faces the servo)
+    z_low = corners[:, 2].min() + 6.0                              # run most of the way down the cup
+    x0, x1, y0, y1 = x_wall - 2.0, -28.6, 51.0, 94.0
+    col = Pos((x0 + x1) / 2, (y0 + y1) / 2, z_low / 2) * Box(x1 - x0, y1 - y0, -z_low)
+    col = fillet(col.edges().filter_by(Axis.Z), 3.5)
+    col = fillet(col.edges().group_by(Axis.Z)[0], 3.0)            # soft lower end
+    for x, y in H.MOUNT_BOLTS:                                     # heat-set inserts from the top face
+        col -= Pos(x, y, -H.INSERT_DEPTH / 2 + 0.01) * Cylinder(H.INSERT_D / 2, H.INSERT_DEPTH)
+    return to_mesh(col)
 
 
 # cable window in the top wall (+Y, opposite the hinge), same size as the cup's side windows
@@ -87,8 +88,12 @@ def main(src):
     cutter.apply_translation([0, -WALL_OUTER - 0.01 + 100, 50])
     cup = trimesh.boolean.intersection([cup, cutter], engine="manifold")
 
-    part = trimesh.boolean.union([cup, hinge_lugs()], engine="manifold")
-    part = trimesh.boolean.difference([part, top_window_cutter()], engine="manifold")
+    cup = trimesh.boolean.difference([cup, top_window_cutter()], engine="manifold")
+    R, t = H.camera_pose()                                                           # into the main-support frame
+    T4 = np.eye(4)
+    T4[:3, :3], T4[:3, 3] = R, t
+    cup.apply_transform(T4)
+    part = trimesh.boolean.union([cup, pedestal()], engine="manifold")
     parts = part.split(only_watertight=False)
     print(f"watertight={part.is_watertight} bodies={len(parts)} volume={part.volume:.0f} mm3 "
           f"extents={part.extents.round(1)} bounds_min={part.bounds[0].round(1)}")

@@ -7,6 +7,7 @@ Everything on the device goes through a small USB 3 hub inside the electronics b
                             ├── USB 3 hub (in the box) ══ one USB-C cable ══ laptop
  Raspberry Pi Pico 2 ──USB──┘
    ├── I2C ── IMU (BNO085-class, in the box floor, rigid to the frame)
+   ├── GPIO ── record button (thumb link: press to start, press again to stop)
    └── UART (half-duplex) ── STS3215 servo bus (gripper width encoder)
 ```
 
@@ -22,6 +23,8 @@ IMU and gripper-width data. Both arrive on the laptop over the same cable and ar
 | BNO085 IMU breakout | In the box floor pocket (28 × 24 mm). **Check your board's outline**; secure it with double-sided tape or epoxy so it can't move |
 | USB 3 hub board, USB-C upstream | Bay is 38 × 42 mm, up to ~14 mm tall (VL817-type 4-port boards). **Check your board's size** before printing |
 | Short cables | D405 USB-C to USB-A (~15 cm, USB 3), Pico micro-USB to USB-A (~10 cm, right-angle helps) |
+| 12 × 12 mm tactile switch + round cap | Record start / stop. Sits in the pod at the front of the thumb channel |
+| 2-core wire, ~30 cm, flexible | Button to the Pico, with slack for the thumb link's travel |
 | 74LVC1G125 or 1 kΩ resistor | Joins Pico TX/RX onto the servo's single-wire bus |
 | 2× M3×8 + 2 M3 heat-set inserts | Box to arm, from the hand side (counterbored, heads sit flush) |
 | 4× M3×6 + 4 M3 heat-set inserts | Lid to box |
@@ -35,6 +38,7 @@ IMU and gripper-width data. Both arrive on the laptop over the same cable and ar
 | IMU VIN / GND | Pico 3V3(OUT) / GND |
 | Servo bus data | Pico GP0 (TX) through the buffer or 1 kΩ, and GP1 (RX) direct |
 | Servo V+ / GND | Hub 5 V / GND. The servo is only read as an encoder (torque off), so 5 V is enough |
+| Record button | Pico GP15 and GND (use the internal pull-up; pressed = low) |
 | Pico USB | Hub downstream port |
 | D405 USB | Hub downstream port (USB 3) |
 
@@ -45,6 +49,6 @@ servo. If the camera drops out, use a USB-C port that supplies more current, or 
 
 ## Box openings
 
-- **Camera side:** a slot for the D405 cable (the plug passes through) and a slot for the servo cable.
+- **Camera side:** a slot for the D405 cable (the plug passes through) and a slot shared by the servo and button cables.
 - **Side wall:** the hub's USB-C upstream port.
 - **Lid:** vent slots.

@@ -5,14 +5,55 @@
 </p>
 
 A hand-worn gripper for collecting bimanual manipulation data without a robot in the loop. It has an
-**Intel RealSense D405** depth camera on the wrist, an on-board **IMU and Raspberry Pi Pico 2**, and a single USB cable to your laptop.
+**Intel RealSense D405** depth camera on the wrist, an on-board **IMU and Raspberry Pi Pico 2**, a **record button** under
+your index finger, and a single USB cable to your laptop.
 
-- **Depth wrist camera:** the D405 sits in a cup that tilts on a Ø12 / M4 hinge and looks down at the fingertips. It's set at 65° below horizontal, 9–10 cm from the tips (the D405's minimum range is 7 cm). Cable windows are on the top and both sides.
-- **Braced camera post:** a tapered post with a 60 mm keel, flaring smoothly into the frame, carries the hinge.
-- **Universal tip flange:** each finger link has a 20 × 30 mm flange with M2 (8 × 12), M3 (12 × 24 + centre pair) and M4 (12 mm pair) hole patterns, so you can bolt on different gripper tips.
-- **One cable:** a closed electronics box holds a USB 3 hub, the Pico 2 and the IMU. The camera and the Pico both connect to the hub, and one USB-C cable goes to the laptop. See [docs/electronics.md](docs/electronics.md).
-- **Moulded look:** every printed part is softly rounded: the T-plate has a blended outline, 3 mm rounds on top, rounded slot rims, a concave blend into the end wall and a camera post that flares into the plate; the end cover and electronics box match.
-- **Checked in a full assembly:** the gripper is clash-checked closed, half-open and open, across camera tilts from 40° to 80°.
+- **Depth wrist camera, rigidly mounted:** the D405 sits in a cradle on a rounded column that bolts flat to the frame with
+  two M3 screws (no hinge). It looks straight down at the base of the gripper fingers from about 8 cm (the D405's minimum
+  range is 7 cm). Cable windows are on the top and both sides.
+- **Finger sleeves:** each finger link has a sleeve that wraps the finger, so the fingers stay in place while you open and
+  close the gripper.
+- **Record button:** a 12 × 12 mm tactile switch sits at the front of the index-finger sleeve. Curl your index fingertip
+  forward to click it, once to start recording and again to stop. It's wired to the Pico.
+- **One cable:** a closed electronics box holds a USB 3 hub, the Pico 2 and the IMU. The camera and the Pico both connect to
+  the hub, and one USB-C cable goes to the laptop. See [docs/electronics.md](docs/electronics.md).
+- **Universal tip flange:** each finger link has a 20 × 30 mm flange with M2 (8 × 12), M3 (12 × 24 + centre pair) and M4
+  (12 mm pair) hole patterns, so you can bolt on tips that match different robot grippers.
+- **Moulded look:** every printed part is softly rounded: a blended T-plate outline, rounded slot rims, a concave blend into
+  the end wall; the end cover and electronics box match.
+- **Checked in a full assembly:** the gripper is clash-checked closed, half-open and fully open.
+
+## Record button
+
+<p align="center">
+  <img src="docs/img/record_button.png" alt="Record button at the front of the index-finger sleeve" width="620">
+</p>
+
+A 12 × 12 mm tactile switch sits at the front end of the index-finger sleeve, facing your fingertip. While you hold the
+gripper, curl your index fingertip forward to click it: **click once to start recording, click again to stop.** It's
+wired to the Pico (GP15 to ground, internal pull-up), so the recording software only has to watch one input; see
+[docs/electronics.md](docs/electronics.md).
+
+## Tips for different robots
+
+Swap the tips to match the robot you'll deploy on. The jaws on the device then have the same shape as the robot's fingers.
+
+| Tips on the device | Robot |
+|---|---|
+| ![](docs/img/tips_agilex-piper.png) **AgileX Piper** | ![](docs/img/robot_piper.png) |
+| ![](docs/img/tips_dream-gripper.png) **TRLC Dream gripper** | ![](docs/img/robot_trlc-dk1.png) **TRLC DK1** |
+| ![](docs/img/tips_arx-x5-2023.png) **ARX X5** | |
+| ![](docs/img/tips_trossen-widowxai.png) **Trossen WidowX AI** | |
+| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant finger (UCG)** | ![](docs/img/robot_openarm.png) **OpenArm** |
+
+The Open-ENPIRE tips are the compliant finger from [Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper),
+which also has matching fingers for OpenArm, Robotiq Hand-E / 2F-140 and I2RT YAM. Here the finger's robot mount is
+replaced with a plate for the universal flange (`redesign/enpire_tip.py`); files are in `hardware/STL/gripper_tips/Open-ENPIRE/`.
+The ENPIRE fingers are about 32 mm thick, so the two jaws meet (fully closed) when the finger links are ~30 mm apart,
+a little before the mechanism's own stop.
+
+Robot renders are made with `tools/robots.py` from published open-source robot models (sources in
+[`hardware/NOTICE.md`](hardware/NOTICE.md)).
 
 ## Parts
 
@@ -27,9 +68,9 @@ tips from `hardware/STL/gripper_tips/`. STEP files for every part are in `hardwa
 |---|---|
 | Main support (T-plate with camera post) | `main_support.stl` |
 | End cover | `end_cover.stl` |
-| D405 wrist mount | `d405_wrist_mount.stl` |
+| D405 cradle (bolts under the frame) | `d405_wrist_mount.stl` |
 | Electronics box + lid | `electronics_box.stl`, `electronics_lid.stl` |
-| Thumb and index/middle finger links (universal tip flange) | `*_thumb_link.stl`, `*_index_middle_finger_link.stl` |
+| Thumb and index/middle finger links (finger sleeve, universal tip flange; button pod on the index link) | `*_thumb_link.stl`, `*_index_middle_finger_link.stl` |
 | Crank, connecting links, hand support base, controller support | `crank_mechanism_plate.stl`, `connecting_link_1/2.stl`, `hand_support_base.stl`, `*_controller_support.stl` |
 
 ### Tip flange hole patterns
@@ -45,7 +86,8 @@ tips from `hardware/STL/gripper_tips/`. STEP files for every part are in `hardwa
 Base mechanics, rods, bearings, servo and fasteners are listed in [bom/README.md](bom/README.md), with these changes:
 
 - **Camera:** Intel RealSense D405 instead of the IMX335 camera. Fix it with 2× M3×5 screws into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth).
-- **Camera hinge:** 1× M4×30 bolt with a nyloc nut.
+- **Camera cradle:** 2× M3×12 screws through the frame (counterbored, heads flush) into 2 M3 heat-set inserts in the column.
+- **Record button:** 1× 12 × 12 mm tactile switch with a round cap, and ~30 cm of thin 2-core wire.
 - **Electronics:** Raspberry Pi Pico 2, a BNO085 IMU, a small USB 3 hub and short cables. This replaces the servo controller board and its power supply. Full list and wiring: [docs/electronics.md](docs/electronics.md).
 
 ## Files
@@ -57,6 +99,7 @@ Base mechanics, rods, bearings, servo and fasteners are listed in [bom/README.md
 | `d405_mount/` | Source for the D405 wrist mount and its input mesh |
 | `tools/assembly.py` | Builds the full assembly, clash-checks it (`--check`) and renders it |
 | `tools/render_docs.py` | Renders the images in this README |
+| `tools/tips.py`, `tools/robots.py` | Tip fitting on the flange; robot renders |
 | `tools/fea.py` | Strength analysis of every printed part (results in `docs/fea_results.csv`, stress maps in `docs/img/fea/`) |
 | `docs/electronics.md` | Electronics, wiring and power |
 | `bom/` | Bill of materials for the base mechanics |
@@ -86,6 +129,24 @@ grip with the tip's 70 mm lever, a 40 N finger press, and hand and VR-controller
 
 The D405 mount, end cover, electronics box and lid, hand support base and controller support have load cases set up in
 `tools/fea.py` but weren't run (`python tools/fea.py d405 end_cover electronics hand_support controller`).
+
+## Grip force
+
+The device records jaw opening (the servo's encoder), IMU motion and the depth camera. It does **not** measure grip
+force yet: the servo only runs as an encoder with its torque off, so its load reading isn't meaningful. Thin-film force
+sensors under the tips, read by the Pico's analog inputs, are the planned way to add it.
+
+## References
+
+UMI pioneered in-the-wild data collection without a robot in the loop, and YUBI brought that idea to a finger-driven
+V-shaped gripper. Generalist built a proprietary hand-worn device for a V-shaped gripper too. This project is an
+open-source hand-worn device for robot arms with parallel-jaw grippers.
+
+- Cheng Chi, Zhenjia Xu, Chuer Pan, Eric Cousineau, Benjamin Burchfiel, Siyuan Feng, Russ Tedrake, and Shuran Song.
+  "Universal Manipulation Interface: In-The-Wild Robot Teaching Without In-The-Wild Robots." *Robotics: Science and
+  Systems (RSS)*, 2024. https://umi-gripper.github.io/
+- Takehiko Ohkawa, Jumpei Arima, Yuki Noguchi, et al. "YUBI: Yielding Universal Bidigital Interface for Bimanual
+  Dexterous Manipulation at Scale." arXiv:2606.10244, 2026. https://yubi.airoa.io/
 
 ## License
 

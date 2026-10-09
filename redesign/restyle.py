@@ -10,7 +10,7 @@ servo boss, hinge tab, arm end); only non-functional geometry changes.
       * smooth blends where the bar meets the round servo boss
       * 45° chamfers on the top corners of the rod end wall and on the outer corners of both bar ends
       * PG logo engraved (0.4 mm) on the outside of the end wall
-      * a stiff tapered camera post with a 60 mm keel and a Ø12 / M4 hinge knuckle (see hinge.py)
+      * two counterbored M3 holes for the bolted-on D405 cradle (see hinge.py)
       * two counterbored M3 holes in the arm for the electronics box
   main_support_cover_plate -> end_cover: matching 45° top and corner chamfers
   electronics_box / electronics_lid: Pico 2 + IMU + USB 3 hub enclosure (electronics_box.py)
@@ -40,7 +40,6 @@ OUTLINE_R = (3.0, 2.5, 2.0)  # top outline rounds (first that works)
 UNDERSIDE_R = (2.0, 1.5)     # underside outline rounds (leaves a flat landing for the camera post)
 WALL_CORNER_R = 6.0
 SLOTS = ((33.0, 24.0, 10.0), (110.0, 24.0, 14.0))   # (centre y, length, width)
-KEEL_LEN = 60.0               # length of the camera-post keel along the bar
 EDGE_R = 1.0                  # edge rounding on the plate outline
 LOGO_W, LOGO_DEPTH = 16.0, 0.4
 
@@ -51,22 +50,6 @@ def box(x0, x1, y0, y1, z0, z1):
 
 def plate_prism(face2d, z0=PLATE_Z[0], z1=PLATE_Z[1]):
     return Pos(0, 0, z0) * extrude(face2d, z1 - z0, dir=(0, 0, 1))
-
-
-def camera_post():
-    """Braced post from the plate underside to a Ø12 x 10 hinge knuckle: a racetrack root (60 x 5.6 mm, on the flat
-    part of the underside, flush with the servo pocket wall at x = -28.2) lofted into a racetrack just above the
-    knuckle. main_support() blends the root into the plate."""
-    ax, az = H.AXIS_M
-    yc, w = H.Y_CENTRE, H.CENTRE_W
-    zt = az + 7.0                                                        # top of the knuckle web
-    root = Plane.XY.offset(0.0) * Pos(-31.0, yc) * Rot(0, 0, 90) * SlotCenterToCenter(KEEL_LEN - 5.6, 5.6)
-    tip = Plane.XY.offset(zt) * Pos(-31.95, yc) * Rot(0, 0, 90) * SlotCenterToCenter(w - 7.5 if w > 7.5 else 0.5, 7.5)
-    fin = loft([root, tip])
-    knuckle = Pos(ax, yc, az) * Rot(90, 0, 0) * Cylinder(H.KNUCKLE_OD / 2, w)
-    web = box(ax - H.KNUCKLE_OD / 2, ax + H.KNUCKLE_OD / 2, yc - w / 2, yc + w / 2, az, zt + 0.5)
-    post = fin + knuckle + web
-    return post - Pos(ax, yc, az) * Rot(90, 0, 0) * Cylinder(H.BOLT_D / 2, w + 2)
 
 
 def end_wall(z0=8.0, z1=34.0, depth=10.0):
@@ -189,11 +172,10 @@ def main_support():
     top = [e for e in s.edges() if e.center().Z > 33.9 and e.bounding_box().size.Z < 0.05]
     s, _ = soften(s, top, (1.5, 1.0), "wall top edges")
 
-    # 3) camera post, blended into the underside
-    s = (s + camera_post()).clean()
-    root = [e for e in s.edges() if abs(e.center().Z - z0) < 0.05 and e.bounding_box().size.Z < 0.05
-            and -34.0 < e.center().X < -29.0 and 40 < e.center().Y < 105]          # outer side and ends of the root
-    s, _ = soften(s, root, (3.0, 2.0, 1.2), "post-to-plate blend")
+    # 3) D405 cradle mounting: 2x M3 through the servo boss, counterbored so the heads sit flush on the top face
+    for x, y in H.MOUNT_BOLTS:
+        s -= Pos(x, y, 4.0) * Cylinder(1.7, 10)
+        s -= Pos(x, y, z1 - 1.75) * Cylinder(3.25, 3.6)
 
     for lx, ly in EB.ARM_SCREWS:                                      # electronics box: M3 up through the arm
         x, y = EB.to_m(lx, ly)

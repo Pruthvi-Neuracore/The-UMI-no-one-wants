@@ -5,7 +5,7 @@ mating features (hole patterns, bores, pins), noted on each part. Frame "M" is t
 fisheye_camera_main_support STEP frame: rods along Y, tips toward -X, hand toward +Z, so in use
 -Z is up. All parts are loaded from STEP because some HandUMI STLs use a different frame.
 
-    python tools/assembly.py [--opening 0..1] [--camera wrist|stock] [--support STEP] [--check]
+    python tools/assembly.py [--opening 0..1] [--support STEP] [--check]
 """
 import argparse
 import sys
@@ -14,12 +14,14 @@ from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
-from build123d import Axis, Box, Cylinder, Pos, fillet, import_step
+from build123d import Axis, Box, Cylinder, Pos, Rot, fillet, import_step
 
 from occ import overlap, place
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "redesign"))
 import electronics_box as EB  # noqa: E402
+from tips import TIP_SETS, link_transform, orientations  # noqa: E402
+import finger_link as FL  # noqa: E402
 import hinge as H  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,7 +64,7 @@ def d405_dummy(floor):
     return b
 
 
-def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=CRANK_Z, conn_z=CONN_Z, redesign=True):
+def assemble(opening=0.6, camera="wrist", tipset=None, support=None, crank_z=CRANK_Z, conn_z=CONN_Z, redesign=True):
     parts = {}
 
     def add(name, shape, mat, colour):
@@ -83,6 +85,10 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
     RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
     add("thumb_link", step(R / "right_thumb_link.step"), T(RL, [-48.5, yt, 30.5]), WHITE)
     add("index_link", step(R / "right_index_middle_finger_link.step"), T(RL, [-48.5, yi, 30.5]), WHITE)
+    # record start/stop button: 12 x 12 tactile switch in the pod at the front of the index channel (right index: sx = +1)
+    bx_, by_, bz_ = FL.button_centre(1)
+    sw = Pos(bx_, by_ + 2.0, bz_) * Box(12.0, 4.0, 12.0) + Pos(bx_, by_ - 1.5, bz_) * Rot(90, 0, 0) * Cylinder(5.5, 3.0)
+    add("record_button", sw, T(RL, [-48.5, yi, 30.5]), "#d23b2a")
     for nm, yc in (("thumb", yt), ("index", yi)):
         for x in (-28.0, -8.0):
             add(f"lm4uu_{nm}_{x:+.0f}", Cylinder(4.0, 12.0) - Cylinder(2.0, 13.0),
@@ -118,26 +124,77 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
     for nm, b in boards.items():
         add(nm, b, T(RB, [cxy[0], cxy[1], 0.0]), PCB)
 
-    # camera on the hinge tab (Ø3.2 axis Y at x -29.7, z -45, centred y 72.5)
-    cams = {"wrist": (R / "d405_wrist_mount.step", 2.0),
-            "stock": (SRC / "camera_mount.step", None)}
-    path, floor = cams[camera]
-    a = np.radians(tilt_deg)
-    base = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]], float)   # cam x->+Y (hinge), y->-Z (up), z->-X (view)
-    tilt = np.array([[np.cos(a), 0, np.sin(a)], [0, 1, 0], [-np.sin(a), 0, np.cos(a)]])   # +a dips the view toward +Z (down in use)
-    Rc = tilt @ base
-    hinge_cam = np.array([0.0, *H.AXIS_CAM]) if camera == "wrist" else np.array([0.0, -28.25, 1.5])
-    tc = np.array([H.AXIS_M[0], H.Y_CENTRE, H.AXIS_M[1]]) - Rc @ hinge_cam
-    add("camera_mount", step(path), T(Rc, tc), WHITE)
-    if floor is not None:
-        add("d405", d405_dummy(floor), T(Rc, tc), DARK)
+    # D405 cradle: bolted flat to the underside of the main support (exported in this frame); camera at the fixed pose
+    if camera == "wrist":
+        add("camera_mount", step(R / "d405_wrist_mount.step"), np.eye(4), WHITE)
+        Rc, tc = H.camera_pose()
+        add("d405", d405_dummy(2.0), T(Rc, tc), DARK)
 
-    # Piper tips on the HandUMI 4x M2 interface (link y=0 face); tip mounting face at tip x=10.8
-    Rt = np.array(RL) @ np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
-    for nm, fn, hc, yc in (("thumb", "Piper-RIGHT-Gripper-Jaw.step", (10.8, 172.7, -56.9), yt),
-                           ("index", "Piper-LEFT-Gripper-Jaw.step", (10.8, 238.5, -56.9), yi)):
-        add(f"tip_{nm}", step(HW / "STEP/gripper_tips/AgileX-Piper" / fn), T(Rt, np.array([-48.5, yc, 30.5]) - Rt @ np.array(hc)), DARK)
+    # gripper tips on the finger-link flange (link y = 0 face); orientation from tips.fit_tipset()
+    ts, choice = tipset if tipset is not None else (TIP_SETS[0], None)
+    choice = choice or best_orientation(ts)
+    for nm, files, centre, yc in (("thumb", ts.left, ts.centre_l, yt), ("index", ts.right, ts.centre_r, yi)):
+        R_t, du = choice[nm]
+        Tt = link_transform(R_t, centre, ts.axis, ts.face, du)
+        TL = T(RL, [-48.5, yc, 30.5])
+        for k, fn in enumerate(files):
+            col = "#e07020" if "Soft" in fn else DARK                     # compliant inserts in orange
+            add(f"tip_{nm}" + ("" if k == 0 else f"_{k}"), step(HW / "STEP/gripper_tips" / ts.folder / fn), TL @ Tt, col)
     return parts
+
+
+def best_orientation(ts, cache={}):
+    """Pick, per tip set, the orientation where the two jaws face each other: smallest gap at full close, no overlap."""
+    if ts.name in cache:
+        return cache[ts.name]
+    if ts.folder == "Open-ENPIRE":
+        cache[ts.name] = _fit_by_inserts(ts)
+        return cache[ts.name]
+    cands = orientations(ts)
+    _, _, _, yt, yi = link_positions(0.0)
+    RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
+    best = None
+    for Rr, dur in cands:
+        for Rl, dul in cands:
+            sh = []
+            for files, centre, yc, Rt, du in ((ts.left, ts.centre_l, yt, Rr, dur), (ts.right, ts.centre_r, yi, Rl, dul)):
+                Tt = link_transform(Rt, centre, ts.axis, ts.face, du)
+                sh.append(place(step(HW / "STEP/gripper_tips" / ts.folder / files[0]), T(RL, [-48.5, yc, 30.5]) @ Tt))
+            ov = overlap(sh[0], sh[1])
+            gap = sh[0].distance_to(sh[1]) if ov < 0.5 else -ov
+            score = gap if gap >= 0 else 1e6 - gap
+            if best is None or score < best[0]:
+                best = (score, {"thumb": (Rr, dur), "index": (Rl, dul)})
+    cache[ts.name] = best[1]
+    return best[1]
+
+
+def _fit_by_inserts(ts, opening=0.5):
+    """Fast fit for dense, thick mesh tips: the soft inserts (gripping faces) of the two jaws face each other (closest
+    centroids) with no overlap between the rigid jaws, checked at half open (mesh booleans instead of exact solids)."""
+    import trimesh
+    _, _, _, yt, yi = link_positions(opening)
+    RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
+    stl = HW / "STL/gripper_tips" / ts.folder
+    mesh = {f: trimesh.load(stl / f.replace(".step", ".stl")) for f in ts.left + ts.right}
+    cands = orientations(ts)
+    best = None
+    for Rr, dur in cands:
+        for Rl, dul in cands:
+            placed = []
+            for files, centre, yc, Rt, du in ((ts.left, ts.centre_l, yt, Rr, dur), (ts.right, ts.centre_r, yi, Rl, dul)):
+                M = T(RL, [-48.5, yc, 30.5]) @ link_transform(Rt, centre, ts.axis, ts.face, du)
+                jaw, soft = mesh[files[0]].copy(), mesh[files[1]].copy()
+                jaw.apply_transform(M)
+                soft.apply_transform(M)
+                placed.append((jaw, soft))
+            d = np.linalg.norm(placed[0][1].centroid - placed[1][1].centroid)
+            if best is not None and d >= best[0]:
+                continue
+            ov = trimesh.boolean.intersection([placed[0][0], placed[1][0]], engine="manifold").volume
+            if ov < 1.0:
+                best = (d, {"thumb": (Rr, dur), "index": (Rl, dul)})
+    return best[1]
 
 
 ALLOWED = [{"rod", "lm4uu"}, {"lm4uu", "thumb_link"}, {"lm4uu", "index_link"}, {"rod", "thumb_link"},
@@ -146,7 +203,9 @@ ALLOWED = [{"rod", "lm4uu"}, {"lm4uu", "thumb_link"}, {"lm4uu", "index_link"}, {
            {"crank_mechanism_plate", "connecting_link_1"}, {"crank_mechanism_plate", "connecting_link_2"},
            {"connecting_link_1", "thumb_link"}, {"connecting_link_2", "index_link"},
            {"camera_mount", "d405"}, {"imu", "electronics_box"},   # IMU sits in its floor pocket
-           {"thumb_link", "tip_thumb"}, {"index_link", "tip_index"}]  # bolted face contact (0.03 mm sliver)          # the D405 is a visual stand-in (body only, no fillet at the floor)
+           {"thumb_link", "tip_thumb"}, {"index_link", "tip_index"},   # bolted face contact (0.03 mm sliver)
+           {"tip_thumb", "tip_thumb_1"}, {"tip_index", "tip_index_1"},  # pads / socks sit on their jaws
+           {"record_button", "index_link"}]                                # switch sits in its pod          # the D405 is a visual stand-in (body only, no fillet at the floor)
 
 
 def interferences(parts, tol=1.0):
@@ -214,3 +273,32 @@ if __name__ == "__main__":
         print(render(parts, a.out))
         if a.check:
             print("interferences:", interferences(parts) or "none")
+
+
+def cables(opening=0.55):
+    """Render-only cables (pyvista tubes): D405 -> electronics box, servo -> box, box -> laptop (the one USB-C)."""
+    import pyvista as pv
+    Rc, tc = H.camera_pose()
+    cam = lambda p: tc + Rc @ np.array(p, float)
+    bx = lambda x, y, z: np.array([EB.BOX_CENTRE_M[0] + x, EB.BOX_CENTRE_M[1] - y, -z])   # box local -> M
+    wall = -EB.BOX[0] / 2
+    _, _, _, yt, yi = link_positions(opening)
+    RL = np.array([[0, -1, 0], [-1, 0, 0], [0, 0, -1]], float)
+    index = lambda p: RL @ np.array(p, float) + np.array([-48.5, yi, 30.5])          # index-link frame -> M
+    routes = {
+        "record_button": ([index(tuple(np.array(FL.button_centre(1)) + np.array([0, 7.0, 12.0]))),
+                           index((12.5, 2.0, 12.0)), index((10.0, -20.0, 20.0)), (-20.0, yi - 4.0, 14.0),
+                           (5.0, 60.0, -6.0), (12.0, 95.0, -8.0), bx(wall - 6, -26.0, 8.5), bx(wall + 5, -26.0, 8.5)], 1.0),
+        "d405_usb": ([cam((21.0, 0.0, 12.0)), cam((34.0, 0.0, 12.0)), cam((34.0, 0.0, -6.0)), (-30.0, 102.0, -40.0),
+                      (5.0, 92.0, -36.0), bx(wall - 8, 0.0, 18.5), bx(wall + 6, 0.0, 18.5)], 2.0),
+        "servo": ([(-24.0, 86.0, -24.0), (-8.0, 96.0, -22.0), (8.0, 104.0, -12.0), bx(wall - 6, -30.0, 8.5),
+                   bx(wall + 5, -30.0, 8.5)], 1.2),
+        "usb_c_to_laptop": ([bx(10.5, EB.BOX[1] / 2 - 4, 10.0), bx(10.5, EB.BOX[1] / 2 + 10, 10.0),
+                             bx(14.0, EB.BOX[1] / 2 + 40, 4.0), bx(30.0, EB.BOX[1] / 2 + 80, -10.0),
+                             bx(60.0, EB.BOX[1] / 2 + 120, -30.0)], 2.2),
+    }
+    out = []
+    for name, (pts, r) in routes.items():
+        sp = pv.Spline(np.array(pts, float), 200).tube(radius=r, n_sides=20)
+        out.append((name, sp, "#16181c"))
+    return out
