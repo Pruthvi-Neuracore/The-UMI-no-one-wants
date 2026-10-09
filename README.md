@@ -85,7 +85,7 @@ tips from `hardware/STL/gripper_tips/`. STEP files for every part are in `hardwa
 
 Base mechanics, rods, bearings, servo and fasteners are listed in [bom/README.md](bom/README.md), with these changes:
 
-- **Camera:** Intel RealSense D405 instead of the IMX335 camera. Fix it with 2× M3×5 screws into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth).
+- **Camera:** Intel RealSense D405 instead of the IMX335 camera. Fix it with 2× M3×10 screws through the ridge under the cup into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth; this leaves 3.5 mm of thread).
 - **Camera hinge:** 1× M4×30 bolt with a nyloc nut.
 - **Record button:** 1× 6 × 6 mm tactile switch (stiff, ~250–320 gf), and ~30 cm of thin, flexible 2-core wire.
 - **Electronics:** Raspberry Pi Pico 2, a BNO085 IMU, a small USB 3 hub and short cables. This replaces the servo controller board and its power supply. Full list and wiring: [docs/electronics.md](docs/electronics.md).

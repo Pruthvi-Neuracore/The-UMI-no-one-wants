@@ -61,10 +61,18 @@ def hinge_lugs() -> trimesh.Trimesh:
         lug += Pos((x0 + x1) / 2, (ay - WALL_OUTER + 1.0) / 2, az) * Box(w, abs(ay + WALL_OUTER - 1.0), 2 * r)
         lug -= Pos((x0 + x1) / 2, ay, az) * Rot(0, 90, 0) * Cylinder(H.BOLT_D / 2, w + 2)
         lugs = lug if lugs is None else lugs + lug
+    # solid ridge under the cup floor, fused to both lugs: no thin neck between the hinge and the cup
+    x_out = H.CENTRE_W / 2 + H.GAP + H.LUG_W
+    ridge = Pos(0, (-WALL_OUTER + RIDGE_END) / 2, (az - r + 0.5) / 2) * Box(2 * x_out, RIDGE_END + WALL_OUTER, abs(az - r) + 0.5)
+    ridge = fillet(ridge.edges().filter_by(Axis.Y), 2.0)
+    lugs += ridge
+    for x in (-10.0, 10.0):                                              # D405 screws pass through the ridge (M3 x 10)
+        lugs -= Pos(x, 0.0, -2.0) * Cylinder(1.7, 7.0)
     return to_mesh(lugs)
 
 
 # cable window in the top wall (+Y, opposite the hinge), same size as the cup's side windows
+RIDGE_END = 8.0                            # ridge runs from the hinge side to y = 8 under the floor
 TOP_WINDOW = dict(x=(-13.0, 13.0), z=(2.04, 15.75), corner_r=3.0)
 
 
