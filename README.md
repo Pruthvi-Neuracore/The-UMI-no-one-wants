@@ -1,65 +1,64 @@
 # The UMI no one wants
 
 <p align="center">
-  <img src="docs/img/hero.png" alt="HandUMI with an Intel RealSense D405 wrist camera and the redesigned frame" width="900">
+  <img src="docs/img/hero.png" alt="The UMI no one wants: hand-worn gripper with an Intel RealSense D405 wrist camera" width="900">
 </p>
 
-A hand-worn UMI for collecting bimanual manipulation data, built on
-[HandUMI](https://github.com/murobotics-ai/handumi-hw). It's HandUMI's mechanism unchanged, with an
-**Intel RealSense D405** depth camera on the wrist and a cleaner, redesigned frame.
+A hand-worn UMI for collecting bimanual manipulation data without a robot in the loop. It's built on the
+[HandUMI](https://github.com/murobotics-ai/handumi-hw) mechanism, with an **Intel RealSense D405** depth camera on the wrist
+and a redesigned frame.
 
-- **D405 wrist camera:** a cup for the D405 on HandUMI's original camera hinge, so the tilt is adjustable, with cable windows on the top and sides.
-- **Redesigned frame:** the T-plate, end cover and controller lid have a new look. Every hole, bore and mating face is the same as HandUMI's, so all other HandUMI parts, tips and the BOM still apply.
-- **Checked in a full assembly:** the device above is rebuilt from the part files, and the moving gripper is clash-checked at closed, half-open and open.
+- **Depth wrist camera:** the D405 sits in a cup that tilts on a Ø12 / M4 hinge and looks down at the fingertips. It's set at 65° below horizontal and 9–10 cm from the tips, beyond the D405's 7 cm minimum range. Cable windows are on the top and both sides.
+- **Stiff camera post:** a tapered fin on the main support carries the camera hinge.
+- **Clean frame:** blended T-plate with lightening slots and faceted ends, plus a matching end cover and a vented controller lid.
+- **Checked in a full assembly:** every part is placed from its mating features, and the moving gripper is clash-checked closed, half-open and open, across camera tilts from 40° to 80°.
 
-## D405 wrist camera
+## Parts
 
 <p align="center">
-  <img src="docs/img/wrist_d405_mount_handumi.png" alt="D405 wrist mount" width="900">
+  <img src="docs/img/parts.png" alt="Main support, end cover, controller lid and D405 wrist mount" width="900">
 </p>
 
-- Prints in place of HandUMI's `camera_mount`. The hinge knuckles are copied unchanged from HandUMI, and it pivots on the main support's tab with an M3 bolt. Use a nyloc nut so the angle holds with the 58 g camera.
-- The D405 fixes with **2× M3×5** into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth per Intel's datasheet).
-- Cable windows are on the top and both sides.
-
-## Redesigned parts
-
-<p align="center">
-  <img src="docs/img/redesign_parts.png" alt="HandUMI parts vs redesign" width="900">
-</p>
-
-| Part | Replaces (HandUMI) | Changes |
+| Part | File | Qty per hand |
 |---|---|---|
-| `main_support` | `fisheye_camera_main_support` | Blended arm-to-bar and boss transitions, racetrack lightening slots, rounded arm end, 45° faceted wall and bar-end corners, engraved name |
-| `end_cover` | `main_support_cover_plate` | Matching 45° facets |
-| `controller_lid` | `servo_controller_cover` | Vent slots |
+| Main support (T-plate with camera post) | `hardware/STL/redesign/main_support.stl` | 1 |
+| End cover | `hardware/STL/redesign/end_cover.stl` | 1 |
+| Controller lid | `hardware/STL/redesign/controller_lid.stl` | 1 |
+| D405 wrist mount | `hardware/STL/d405/wrist_d405_mount_handumi.stl` | 1 |
+| Finger links, crank, connecting links, hand support base, controller support, servo-controller box | `hardware/STL/right_handumi/` or `left_handumi/` (HandUMI) | 1 each |
+| Gripper tips for your robot | `hardware/STL/gripper_tips/` | 1 pair |
 
-All three are the same part for left and right hands, as in HandUMI.
+Don't print HandUMI's `fisheye_camera_main_support`, `main_support_cover_plate`, `servo_controller_cover` or `camera_mount`;
+the parts above replace them. All the redesigned parts are the same for left and right hands.
 
-## Build
+## Hardware
 
-1. Print HandUMI's `hardware/STL/right_handumi/` (or `left_handumi/`), **except** `camera_mount`, `fisheye_camera_main_support`,
-   `main_support_cover_plate` and `servo_controller_cover`.
-2. Print instead: `hardware/STL/d405/wrist_d405_mount_handumi.stl` and everything in `hardware/STL/redesign/`.
-3. Print gripper tips for your robot from `hardware/STL/gripper_tips/`.
-4. Buy parts from HandUMI's [BOM](bom/README.md), replacing the IMX335 camera with an **Intel RealSense D405** (USB 3 cable) and adding 2× M3×5 screws.
+HandUMI's [BOM](bom/README.md) applies, with these changes:
+
+- **Camera:** Intel RealSense D405 with a USB 3 cable, instead of the IMX335.
+- **Camera screws:** 2× M3×5 into the D405's rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth).
+- **Camera hinge:** 1× M4×30 bolt and nyloc nut.
 
 ## Files
 
 | Path | What |
 |---|---|
-| `hardware/STL`, `hardware/STEP` | HandUMI parts (unmodified), plus `d405/` and `redesign/` |
-| `d405_mount/` | D405 mount source (`wrist_mount_to_handumi.py`) and the input mesh |
-| `redesign/restyle.py` | Source for the redesigned parts (edits on HandUMI's STEP, interfaces untouched) |
-| `tools/assembly.py` | Rebuilds the full assembly from the parts, clash-checks it (`--check`), renders it |
+| `hardware/STL`, `hardware/STEP` | Printable parts and CAD (`redesign/`, `d405/`, plus HandUMI's parts and tips) |
+| `redesign/` | Source for the main support, end cover and lid (`restyle.py`) and the shared hinge dimensions (`hinge.py`) |
+| `d405_mount/` | Source for the D405 wrist mount and its input mesh |
+| `tools/assembly.py` | Builds the full assembly, clash-checks it (`--check`) and renders it |
 | `tools/render_docs.py` | Renders the images in this README |
-| `bom/` | HandUMI BOM |
+| `bom/` | Bill of materials |
 
-To rebuild: `python d405_mount/wrist_mount_to_handumi.py d405_mount/input/wrist_camera_mount.stl`, `python redesign/restyle.py`,
-then `cd tools && python assembly.py --opening 0 --check && python render_docs.py`
-(Python 3.12 with `build123d`, `trimesh`, `manifold3d`, `pyvista`).
+To rebuild everything (Python 3.12 with `build123d`, `trimesh`, `manifold3d`, `pyvista`):
+
+```bash
+python redesign/restyle.py
+python d405_mount/wrist_mount_to_handumi.py d405_mount/input/wrist_camera_mount.stl
+cd tools && python assembly.py --opening 0 --check && python render_docs.py
+```
 
 ## Credits
 
-Based on [HandUMI](https://github.com/murobotics-ai/handumi-hw) (Apache-2.0); see [`hardware/NOTICE.md`](hardware/NOTICE.md).
+Built on [HandUMI](https://github.com/murobotics-ai/handumi-hw) (Apache-2.0); see [`hardware/NOTICE.md`](hardware/NOTICE.md).
 The STS3215 servo model used in renders is from [SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100) (Apache-2.0).

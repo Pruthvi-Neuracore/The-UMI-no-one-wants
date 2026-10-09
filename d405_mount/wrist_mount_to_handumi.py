@@ -1,12 +1,12 @@
 """Adapt the user's D405 wrist-camera cup to HandUMI's camera hinge.
 
 Input:  a mesh of the wrist camera mount (D405 cup + 4x M3 flat tab), in metres or mm.
-Output: the same cup with the tab removed and HandUMI's camera_mount hinge (two Ø8
-        knuckles, M3 pivot) fused to the edge of the cup that the tab used to be on, plus a
-        cable window in the top wall matching the side windows.
+Output: the same cup with the tab removed and two Ø12 hinge lugs (M4 pivot, redesign/hinge.py)
+        on the edge the tab used to be on, plus a cable window in the top wall matching the
+        side windows. It mates with the redesigned main support's camera post.
 
 The cup is re-oriented into HandUMI's camera_mount frame: cup floor outer face at z=0,
-D405 centred on (0, 0), camera looking +Z, hinge axis along X at y=-28.25, z=1.5.
+D405 centred on (0, 0), camera looking +Z, hinge axis along X at (y, z) = hinge.AXIS_CAM.
 The tilt now comes from the HandUMI hinge instead of being built into the part.
 
     python wrist_mount_to_handumi.py <input.stl>
@@ -16,10 +16,12 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
-from build123d import Axis, Box, Mesher, Pos, export_step, fillet, import_step
+from build123d import Axis, Box, Cylinder, Mesher, Pos, Rot, export_step, fillet
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "redesign"))
+import hinge as H  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-HANDUMI_MOUNT = ROOT / "hardware/STEP/right_handumi/camera_mount.step"
 OUT = ROOT / "hardware"
 
 # measured on the supplied mesh (mm, its own frame)
@@ -41,12 +43,25 @@ def to_handumi_frame(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     return m
 
 
-def hinge_mesh() -> trimesh.Trimesh:
-    original = import_step(str(HANDUMI_MOUNT))
-    keep = Pos(0, -40.75, 0) * Box(20, 40, 20)           # |x| < 10, y < -20.75: knuckles + necks only
-    hinge = original & keep
-    v, t = hinge.tessellate(0.02, 0.1)
+def to_mesh(shape) -> trimesh.Trimesh:
+    v, t = shape.tessellate(0.02, 0.1)
     return trimesh.Trimesh(np.array([(q.X, q.Y, q.Z) for q in v]), np.array(t))
+
+
+def hinge_lugs() -> trimesh.Trimesh:
+    """Two Ø12 lugs on an M4 pivot that straddle the main support's 10 mm centre knuckle (redesign/hinge.py)."""
+    ay, az = H.AXIS_CAM
+    r = H.KNUCKLE_OD / 2
+    x_in = H.CENTRE_W / 2 + H.GAP
+    lugs = None
+    for s in (-1, 1):
+        x0, x1 = sorted((s * x_in, s * (x_in + H.LUG_W)))
+        w = x1 - x0
+        lug = Pos((x0 + x1) / 2, ay, az) * Rot(0, 90, 0) * Cylinder(r, w)
+        lug += Pos((x0 + x1) / 2, (ay - WALL_OUTER + 1.0) / 2, az) * Box(w, abs(ay + WALL_OUTER - 1.0), 2 * r)
+        lug -= Pos((x0 + x1) / 2, ay, az) * Rot(0, 90, 0) * Cylinder(H.BOLT_D / 2, w + 2)
+        lugs = lug if lugs is None else lugs + lug
+    return to_mesh(lugs)
 
 
 # cable window in the top wall (+Y, opposite the hinge), same size as the cup's side windows
@@ -72,11 +87,7 @@ def main(src):
     cutter.apply_translation([0, -WALL_OUTER - 0.01 + 100, 50])
     cup = trimesh.boolean.intersection([cup, cutter], engine="manifold")
 
-    # bridge between the knuckle necks and the cup wall/floor (same thickness as HandUMI's plate)
-    bridge = trimesh.creation.box(extents=[20.0, 3.0, 3.0])        # spans the knuckle necks only
-    bridge.apply_translation([0, -WALL_OUTER + 0.5, 1.5])
-
-    part = trimesh.boolean.union([cup, bridge, hinge_mesh()], engine="manifold")
+    part = trimesh.boolean.union([cup, hinge_lugs()], engine="manifold")
     part = trimesh.boolean.difference([part, top_window_cutter()], engine="manifold")
     parts = part.split(only_watertight=False)
     print(f"watertight={part.is_watertight} bodies={len(parts)} volume={part.volume:.0f} mm3 "

@@ -8,6 +8,7 @@ servo boss, hinge tab, arm end); only non-functional geometry changes.
       * smooth blends where the bar meets the round servo boss
       * 45° chamfers on the top corners of the rod end wall and on the outer corners of both bar ends
       * engraved name on the outside of the end wall
+      * a stiff tapered camera post with a Ø12 / M4 hinge knuckle (see hinge.py) instead of the thin strip
   main_support_cover_plate -> end_cover: matching 45° top and corner chamfers
   servo_controller_cover -> controller_lid: vent slots
 
@@ -15,8 +16,10 @@ servo boss, hinge tab, arm end); only non-functional geometry changes.
 """
 from pathlib import Path
 
-from build123d import (Align, Box, Circle, Cylinder, Polygon, Pos, Rot, SlotCenterToCenter, Text,
-                       export_step, export_stl, extrude, import_step)
+from build123d import (Align, Box, Circle, Cylinder, Plane, Polygon, Pos, Rectangle, Rot, SlotCenterToCenter,
+                       Text, export_step, export_stl, extrude, import_step, loft)
+
+import hinge as H
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "hardware/STEP/right_handumi"            # left and right versions of these parts are identical
@@ -78,11 +81,27 @@ def boss_blend(sy, r=10.0):
     return plate_prism(Polygon(a, i, b, align=None)) - plate_prism(Pos(*fc) * Circle(r))
 
 
+def camera_post():
+    """Tapered fin from the plate underside to a Ø12 x 10 hinge knuckle (replaces HandUMI's 3 x 15 mm strip).
+    The servo's outer face is at x = -28.2, so the fin grows outward (-X) and in Y."""
+    ax, az = H.AXIS_M
+    yc, w = H.Y_CENTRE, H.CENTRE_W
+    root = Plane.XY.offset(0.0) * Pos(-34.35, yc) * Rectangle(12.3, 30.0)          # x -40.5..-28.2, y 57.5..87.5
+    tip = Plane.XY.offset(az + 7.0) * Pos(-31.95, yc) * Rectangle(7.5, w)           # x -35.7..-28.2
+    fin = loft([root, tip])
+    knuckle = Pos(ax, yc, az) * Rot(90, 0, 0) * Cylinder(H.KNUCKLE_OD / 2, w)
+    web = box(ax - H.KNUCKLE_OD / 2, ax + H.KNUCKLE_OD / 2, yc - w / 2, yc + w / 2, az, az + 7.0)
+    post = fin + knuckle + web
+    return post - Pos(ax, yc, az) * Rot(90, 0, 0) * Cylinder(H.BOLT_D / 2, w + 2)
+
+
 def main_support():
     s = import_step(str(SRC / "fisheye_camera_main_support.step"))
     s += corner_fill(0.0, 54.5, 1, -1, BLEND_R)
     s += corner_fill(0.0, 90.5, 1, 1, BLEND_R)
     s += boss_blend(1) + boss_blend(-1)
+    s -= box(-34.5, -25.5, 63.5, 81.5, -50.0, -0.001)                 # HandUMI's thin camera post
+    s += camera_post()
     for x, sx in ((-36.0, -1), (0.0, 1)):                              # faceted bar ends
         s -= vertical_chamfer(x, 0.0, sx, -1, END_CHAMFER, -1, 35)
         s -= vertical_chamfer(x, 140.0, sx, 1, END_CHAMFER, -1, 9)
