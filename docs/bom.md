@@ -8,7 +8,7 @@ Quantities are for a **pair** (one right-hand and one left-hand device).
 |---|---|---|
 | Everything in `hardware/STL/right/` and `hardware/STL/left/` except the button cover | PLA or PETG, ~200 g per device | 1 set each |
 | `button_cover_tpu.stl` | TPU 95A | 2 |
-| Tips from `hardware/STL/gripper_tips/` (Hand-E or Open-ENPIRE) | PLA / PETG (ENPIRE soft inserts in TPU) | 2 pairs |
+| Tips from `hardware/STL/gripper_tips/` (Piper, Open-ENPIRE or Hand-E) | PLA / PETG (ENPIRE soft inserts in TPU) | 2 pairs |
 
 ## Mechanics
 

@@ -34,6 +34,10 @@ class TipSet:
 
 
 TIP_SETS = [
+    # AgileX Piper jaw + pad
+    TipSet("AgileX Piper", "AgileX-Piper", ["Piper-RIGHT-Gripper-Jaw.step", "Piper-RIGHT-Gripper-Pad.step"],
+           ["Piper-LEFT-Gripper-Jaw.step", "Piper-LEFT-Gripper-Pad.step"], "x", 10.8,
+           (10.8, 172.7, -56.9), (10.8, 238.5, -56.9), "y", "z", robot="piper"),
     # Robotiq Hand-E finger on a flange plate (hande_tip.py); both jaws are the same part, one turned 180°
     TipSet("Robotiq Hand-E", "Robotiq-Hand-E", ["Hand-E-Finger.step"], ["Hand-E-Finger.step"], "z", 2.0,
            (5.5, 0.0, 2.0), (5.5, 0.0, 2.0), "x", "y", lr_sign=0, flip_index=True, s_only=-1),

@@ -8,14 +8,17 @@ are kept in `cad/source/`. `hardware/reference/STS3215_03a.step` is from
 `hardware/STL/gripper_tips/Open-ENPIRE/` comes from
 [pgeedh/Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper) (Apache-2.0, license copied to
 `cad/source/enpire/`). The device jaws are the I2RT finger with its mount tab replaced by a flange plate
-(`cad/enpire_tip.py`). The robot-side fingers in `Open-ENPIRE/robot/` are the project's files, converted to millimetres.
+(`cad/enpire_tip.py`). `Open-ENPIRE/robot/OpenArm_Hard.stl` is the project's OpenArm finger, converted to millimetres.
+
+`hardware/{STL,STEP}/gripper_tips/AgileX-Piper/` are unmodified from handumi-hw.
 
 `hardware/STL/gripper_tips/Robotiq-Hand-E/` is built from the Robotiq Hand-E finger visual mesh
 (`cad/source/hand_e/finger.dae`, from the Robotiq Hand-E robot description) with a flange plate added (`cad/hande_tip.py`).
 
 README robot renders (`docs/img/robot_*.png`) are made from the ABB CRB 15000, FANUC CRX-5iA and UR5 dual-arm
-descriptions with Robotiq Hand-E grippers in the Neuracore robots repository. The models are not redistributed here.
-`docs/img/robot_hand_e_enpire.jpg` is from the Open-ENPIRE-Gripper repository.
+descriptions with Robotiq Hand-E grippers in the Neuracore robots repository, and from the AgileX Piper and OpenArm models
+in [murobotics-ai/handumi-sw](https://github.com/murobotics-ai/handumi-sw) `assets/` (Apache-2.0). The models are not
+redistributed here.
 
 Changes in this repository:
 
@@ -29,4 +32,4 @@ Changes in this repository:
   patterns) and a record-button pocket with a TPU cover (`button_cover_tpu`). Source: `cad/finger_link.py`.
 - `d405_wrist_mount`: a D405 cup with Ø12 / M4 hinge lugs and gussets, replacing `camera_mount`. Source: `cad/d405_wrist_mount.py`.
 - Every printed part carries a small engraved PG logo (`cad/watermark.py`); the gripper tips do not.
-- The original bill of materials, hardware README and the other robots' gripper tips were removed; `docs/bom.md` is new.
+- The original bill of materials, hardware README and the gripper tips for other robots were removed; `docs/bom.md` is new.

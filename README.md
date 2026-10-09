@@ -23,7 +23,7 @@ your index finger, and a single USB cable to your laptop.
   the end wall; the end cover and electronics box match.
 - **Small PG mark:** every printed part has a small PG logo engraved 0.2 mm deep on one visible face, as a subtle
   maker's mark. The gripper tips stay plain.
-- **Checked in a full assembly:** the gripper is clash-checked closed, half-open and fully open with both tip sets.
+- **Checked in a full assembly:** the gripper is clash-checked closed, half-open and fully open with every tip set.
 
 ## Record button
 
@@ -47,18 +47,21 @@ Swap the tips to match the robot you'll deploy on, so the jaws on the device hav
 
 | Tips on the device | Robot |
 |---|---|
+| ![](docs/img/tips_agilex-piper.png) **AgileX Piper tips** | ![](docs/img/robot_piper.png) **AgileX Piper** |
+| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant fingers** | ![](docs/img/robot_openarm_enpire.png) **OpenArm with Open-ENPIRE fingers** |
 | ![](docs/img/tips_robotiq-hand-e.png) **Robotiq Hand-E fingers** | ![](docs/img/robot_abb_gofa.png) **ABB GoFa CRB 15000 (dual) with Hand-E** |
 | ![](docs/img/tips_robotiq-hand-e.png) **Robotiq Hand-E fingers** | ![](docs/img/robot_fanuc_crx5ia.png) **FANUC CRX-5iA (dual) with Hand-E** |
 | ![](docs/img/tips_robotiq-hand-e.png) **Robotiq Hand-E fingers** | ![](docs/img/robot_ur5.png) **UR5 (dual) with Hand-E** |
-| ![](docs/img/tips_open-enpire.png) **Open-ENPIRE compliant fingers** | ![](docs/img/robot_hand_e_enpire.jpg) **Robotiq Hand-E with Open-ENPIRE fingers** |
 
-- **Hand-E tips** (`hardware/STL/gripper_tips/Robotiq-Hand-E/`): the actual Robotiq Hand-E finger on a flange plate
-  (`cad/hande_tip.py`). Print it twice; the index jaw is the same part turned 180°, so the stepped fingertips face each other.
-- **Open-ENPIRE tips** (`hardware/STL/gripper_tips/Open-ENPIRE/`): the compliant finger from
+- **Piper tips** (`hardware/STL/gripper_tips/AgileX-Piper/`): the AgileX Piper jaw and pad, shown on the device above.
+- **Open-ENPIRE tips, for OpenArm** (`hardware/STL/gripper_tips/Open-ENPIRE/`): the compliant finger from
   [Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper) with its robot mount replaced by a flange plate
-  (`cad/enpire_tip.py`). The matching robot-side fingers for Robotiq Hand-E, Robotiq 2F-140, OpenArm and I2RT YAM are in
-  `Open-ENPIRE/robot/` (mm), so the same finger shape is on the device and on the robot. The ENPIRE fingers are about
-  32 mm thick, so the jaws meet a little before the mechanism's own stop.
+  (`cad/enpire_tip.py`). The matching OpenArm finger is in `Open-ENPIRE/robot/OpenArm_Hard.stl` (mm), so the same finger
+  shape is on the device and on the robot. The ENPIRE fingers are about 32 mm thick, so the jaws meet a little before
+  the mechanism's own stop.
+- **Hand-E tips, for ABB, FANUC and UR** (`hardware/STL/gripper_tips/Robotiq-Hand-E/`): the actual Robotiq Hand-E finger
+  on a flange plate (`cad/hande_tip.py`). Print it twice; the index jaw is the same part turned 180°, so the stepped
+  fingertips face each other.
 
 Robot renders are made with `cad/robots.py` from the robots' published descriptions (sources in
 [`hardware/NOTICE.md`](hardware/NOTICE.md)).
@@ -69,8 +72,8 @@ The full assembled device (right hand, half open) is in [`assembly/`](assembly/)
 
 | File | Use |
 |---|---|
-| `umi_right_robotiq-hand-e.glb`, `umi_right_open-enpire.glb` | Coloured, one node per part, metres, Y up; drag into Onshape, Blender or any glTF viewer |
-| `umi_right_robotiq-hand-e.stl`, `umi_right_open-enpire.stl` | One merged mesh in mm, Z up |
+| `umi_right_agilex-piper.glb`, `umi_right_open-enpire.glb`, `umi_right_robotiq-hand-e.glb` | Coloured, one node per part, metres, Y up; drag into Onshape, Blender or any glTF viewer |
+| `umi_right_agilex-piper.stl`, `umi_right_open-enpire.stl`, `umi_right_robotiq-hand-e.stl` | One merged mesh in mm, Z up |
 
 The left hand is the mirror image. Regenerate with `python cad/export_assembly.py [--opening 0..1]`.
 
@@ -130,7 +133,7 @@ To rebuild everything (Python 3.12 with `build123d`, `trimesh`, `manifold3d`, `p
 cd cad
 python restyle.py && python hande_tip.py && python enpire_tip.py && python d405_wrist_mount.py && python watermark.py
 python assembly.py --opening 0 --check && python export_assembly.py && python render_docs.py
-python robots.py /path/to/Neuracore_Robots
+python robots.py /path/to/Neuracore_Robots && python robots.py --sw /path/to/handumi-sw/assets
 ```
 
 ## Strength
