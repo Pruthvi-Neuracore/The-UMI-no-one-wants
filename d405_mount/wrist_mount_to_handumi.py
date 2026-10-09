@@ -2,7 +2,8 @@
 
 Input:  a mesh of the wrist camera mount (D405 cup + 4x M3 flat tab), in metres or mm.
 Output: the same cup with the tab removed and HandUMI's camera_mount hinge (two Ø8
-        knuckles, M3 pivot) fused to the edge of the cup that the tab used to be on.
+        knuckles, M3 pivot) fused to the edge of the cup that the tab used to be on, plus a
+        cable window in the top wall matching the side windows.
 
 The cup is re-oriented into HandUMI's camera_mount frame: cup floor outer face at z=0,
 D405 centred on (0, 0), camera looking +Z, hinge axis along X at y=-28.25, z=1.5.
@@ -15,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
-from build123d import Box, Mesher, Pos, export_step, import_step
+from build123d import Axis, Box, Mesher, Pos, export_step, fillet, import_step
 
 ROOT = Path(__file__).resolve().parents[1]
 HANDUMI_MOUNT = ROOT / "hardware/STEP/right_handumi/camera_mount.step"
@@ -48,6 +49,18 @@ def hinge_mesh() -> trimesh.Trimesh:
     return trimesh.Trimesh(np.array([(q.X, q.Y, q.Z) for q in v]), np.array(t))
 
 
+# cable window in the top wall (+Y, opposite the hinge), same size as the cup's side windows
+TOP_WINDOW = dict(x=(-13.0, 13.0), z=(2.04, 15.75), corner_r=3.0)
+
+
+def top_window_cutter() -> trimesh.Trimesh:
+    (x0, x1), (z0, z1) = TOP_WINDOW["x"], TOP_WINDOW["z"]
+    w = Pos((x0 + x1) / 2, WALL_OUTER, (z0 + z1) / 2) * Box(x1 - x0, 8.0, z1 - z0)
+    w = fillet(w.edges().filter_by(Axis.Y), TOP_WINDOW["corner_r"])
+    v, t = w.tessellate(0.02, 0.1)
+    return trimesh.Trimesh(np.array([(q.X, q.Y, q.Z) for q in v]), np.array(t))
+
+
 def main(src):
     m = trimesh.load(src, force="mesh")
     if m.extents.max() < 1.0:              # exported in metres
@@ -64,6 +77,7 @@ def main(src):
     bridge.apply_translation([0, -WALL_OUTER + 0.5, 1.5])
 
     part = trimesh.boolean.union([cup, bridge, hinge_mesh()], engine="manifold")
+    part = trimesh.boolean.difference([part, top_window_cutter()], engine="manifold")
     parts = part.split(only_watertight=False)
     print(f"watertight={part.is_watertight} bodies={len(parts)} volume={part.volume:.0f} mm3 "
           f"extents={part.extents.round(1)} bounds_min={part.bounds[0].round(1)}")
