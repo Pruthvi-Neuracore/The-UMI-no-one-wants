@@ -56,14 +56,14 @@ Swap the tips to match the robot you'll deploy on, so the jaws on the device hav
 - **Piper tips** (`hardware/STL/gripper_tips/AgileX-Piper/`): the AgileX Piper jaw and pad, shown on the device above.
 - **Open-ENPIRE tips, for OpenArm** (`hardware/STL/gripper_tips/Open-ENPIRE/`): the compliant finger from
   [Open-ENPIRE-Gripper](https://github.com/pgeedh/Open-ENPIRE-Gripper) with its robot mount replaced by a flange plate
-  (`cad/enpire_tip.py`). The matching OpenArm finger is in `Open-ENPIRE/robot/OpenArm_Hard.stl` (mm), so the same finger
+ . The matching OpenArm finger is in `Open-ENPIRE/robot/OpenArm_Hard.stl` (mm), so the same finger
   shape is on the device and on the robot. The ENPIRE fingers are about 32 mm thick, so the jaws meet a little before
   the mechanism's own stop.
 - **Hand-E tips, for ABB, FANUC and UR** (`hardware/STL/gripper_tips/Robotiq-Hand-E/`): the actual Robotiq Hand-E finger
-  on a flange plate (`cad/hande_tip.py`). Print it twice; the index jaw is the same part turned 180°, so the stepped
+  on a flange plate. Print it twice; the index jaw is the same part turned 180°, so the stepped
   fingertips face each other.
 
-Robot renders are made with `cad/robots.py` from the robots' published descriptions (sources in
+Robot renders are made from the robots' published descriptions (sources in
 [`hardware/NOTICE.md`](hardware/NOTICE.md)).
 
 ## Assembly
@@ -75,7 +75,7 @@ The full assembled device (right hand, half open) is in [`assembly/`](assembly/)
 | `umi_right_agilex-piper.glb`, `umi_right_open-enpire.glb`, `umi_right_robotiq-hand-e.glb` | Coloured, one node per part, metres, Y up; drag into Onshape, Blender or any glTF viewer |
 | `umi_right_agilex-piper.stl`, `umi_right_open-enpire.stl`, `umi_right_robotiq-hand-e.stl` | One merged mesh in mm, Z up |
 
-The left hand is the mirror image. Regenerate with `python cad/export_assembly.py [--opening 0..1]`.
+The left hand is the mirror image.
 
 ## Parts
 
@@ -118,27 +118,15 @@ Everything to buy is in [docs/bom.md](docs/bom.md). Notes:
 
 | Path | What |
 |---|---|
-| `hardware/STL`, `hardware/STEP` | Printable parts (`right/`, `left/`, `gripper_tips/`) and CAD |
+| `hardware/STL` | Printable parts: `right/`, `left/` and `gripper_tips/` |
+| `hardware/STEP` | The same parts as STEP, for editing in CAD |
 | `assembly/` | Full assembly as GLB and STL |
-| `cad/` | Everything that builds the parts: `restyle.py` (main support, end cover, finger links, box), `finger_link.py`, `electronics_box.py`, `hinge.py`, `d405_wrist_mount.py`, `hande_tip.py`, `enpire_tip.py`, `watermark.py`, `logo.py`; inputs in `cad/source/` |
-| `cad/assembly.py`, `cad/tips.py` | Full assembly with clash check (`--check`); tip fitting on the flange |
-| `cad/export_assembly.py`, `cad/render_docs.py`, `cad/robots.py` | Assembly export, README images, robot renders |
-| `cad/fea.py` | Strength analysis (results in `docs/fea_results.csv`, stress maps in `docs/img/fea/`) |
-| `docs/bom.md`, `docs/electronics.md` | Bill of materials; electronics, wiring and power |
-
-To rebuild everything (Python 3.12 with `build123d`, `trimesh`, `manifold3d`, `pyvista`), run in this order from `cad/`;
-`watermark.py` goes last because it engraves the parts the others write:
-
-```bash
-cd cad
-python restyle.py && python hande_tip.py && python enpire_tip.py && python d405_wrist_mount.py && python watermark.py
-python assembly.py --opening 0 --check && python export_assembly.py && python render_docs.py
-python robots.py /path/to/Neuracore_Robots && python robots.py --sw /path/to/handumi-sw/assets
-```
+| `docs/bom.md` | Bill of materials |
+| `docs/electronics.md` | Electronics, wiring and power |
 
 ## Strength
 
-Every printed part is analysed in `cad/fea.py`: linear-elastic FEA in PLA (E = 3 GPa), with quadratic tetrahedra
+Every printed part was analysed with linear-elastic FEA in PLA (E = 3 GPa), with quadratic tetrahedra
 meshed from the STEP files and checked against hand calculations. Load cases are 15 g knocks on the camera, a 30 N
 grip with the tip's 70 mm lever, a 40 N finger press, and hand and VR-controller loads. Safety factors are against
 30 MPa (along layers) and 15 MPa (across layers). Results are in [`docs/fea_results.csv`](docs/fea_results.csv), with stress maps in `docs/img/fea/`.
@@ -151,8 +139,7 @@ grip with the tip's 70 mm lever, a 40 N finger press, and hand and VR-controller
 | Crank plate | 30 N on each crank pin | 52 / 26 |
 | Connecting link | 40 N pull | 65 / 32 |
 
-The D405 mount, end cover, electronics box and lid, hand support base and controller support have load cases set up in
-`cad/fea.py` but weren't run (`python cad/fea.py d405 end_cover electronics hand_support controller`).
+The D405 mount, end cover, electronics box and lid, hand support base and controller support haven't been analysed yet.
 
 ## Grip force
 
