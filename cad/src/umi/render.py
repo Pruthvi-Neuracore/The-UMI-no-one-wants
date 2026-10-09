@@ -40,11 +40,11 @@ def vitamins(opening):
     """Rods, bearings and the HandUMI UMI-Gripper finger holders (render only)."""
     xc = CLOSED_XC + opening / 2
     xo = FRAME_X + END_T
-    v = {f"rod{z}": cyl_x(ROD_D, -xo, xo, 0, z) for z in (ROD_Z, -ROD_Z)}
+    v = {f"rod_{'top' if z > 0 else 'bottom'}": cyl_x(ROD_D, -xo, xo, 0, z) for z in (ROD_Z, -ROD_Z)}
     for s in (-1, 1):
         for z in (ROD_Z, -ROD_Z):
             x0 = s * xc - CAR_W / 2 if s < 0 else s * xc + CAR_W / 2 - LMU_L
-            v[f"lm6uu{s}{z}"] = cyl_x(LMU_OD, x0, x0 + LMU_L, 0, z) - cyl_x(ROD_D, x0 - 1, x0 + LMU_L + 1, 0, z)
+            v[f"lm6uu_{'L' if s < 0 else 'R'}_{'top' if z > 0 else 'bottom'}"] = cyl_x(LMU_OD, x0, x0 + LMU_L, 0, z) - cyl_x(ROD_D, x0 - 1, x0 + LMU_L + 1, 0, z)
     hx, hy, hz = HOLDER_HOLE_CENTRE
     v["tip_R"] = Pos(xc - hx, CAR_Y1 - hy, -hz) * import_step(str(TIPS / "UMI-RIGHT-Finger-Holder.step"))
     v["tip_L"] = Pos(-xc + hx, CAR_Y1 - hy, -hz) * import_step(str(TIPS / "UMI-LEFT-Finger-Holder.step"))

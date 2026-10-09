@@ -20,3 +20,16 @@ python -m umi.render    # previews -> docs/img
 
 `third_party/` holds the HandUMI tips and YUBI OpenArm flange, unmodified, with their licenses.
 `tools/inspect_step.py` prints holes and bosses of any STEP file and was used to measure the reference parts.
+
+## Assemblies (`cad/assemblies/`)
+
+`python -m umi.export_assembly` writes the collector and OpenArm unit, each at full open (80 mm) and nearly closed (10 mm),
+with rods, bearings and the HandUMI UMI-Gripper tips included, one named and coloured part each:
+
+| File | Use |
+|---|---|
+| `*.step` | **Onshape** (Create → Import): imports as editable, named parts in mm |
+| `*.gltf` | Onshape mesh import (view only), or any glTF viewer |
+| `*.glb` | Single-file glTF for web viewers, Blender, etc. Onshape doesn't list `.glb` as an import format |
+
+glTF/GLB are in metres (glTF convention); STEP is in millimetres. The servo is shown as its measured envelope.
