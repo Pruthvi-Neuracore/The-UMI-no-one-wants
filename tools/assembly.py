@@ -19,17 +19,18 @@ from build123d import Axis, Box, Cylinder, Pos, fillet, import_step
 from occ import overlap, place
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "redesign"))
+import electronics_box as EB  # noqa: E402
 import hinge as H  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 HW = ROOT / "hardware"
-R = HW / "STEP/right_handumi"
+R = HW / "STEP/right"
 
 CRANK_C = np.array([-18.0, 72.5])        # servo axis (Ø20.4 hole) in M
 CRANK_R, ROD_LEN = 21.5, 36.0            # crank pin radius, connecting-link centre distance
 LINK_PIN_X = {"thumb": -30.5, "index": -5.5}
 CRANK_Z, CONN_Z = 10.0, 15.0             # crank centre plane / connecting-link plane (from --solve)
-BLUE, ORANGE, METAL, DARK = "#1d4f9c", "#f07c1e", "#c9ccd1", "#2b2e33"   # structure, moving/accent, steel, bought parts
+BLUE, WHITE, METAL, DARK, PCB = "#1d4f9c", "#f4f5f7", "#c9ccd1", "#2b2e33", "#2f7d4f"   # frame, accents, steel, bought parts, boards
 
 
 def T(R3, t):
@@ -68,11 +69,11 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
         parts[name] = (place(shape, mat), colour)
 
     I3 = np.eye(3)
-    RD = HW / "STEP/redesign"
-    support = support or (RD / "main_support.step" if redesign else R / "fisheye_camera_main_support.step")
+    SRC = ROOT / "redesign/source"
+    support = support or (R / "main_support.step" if redesign else SRC / "fisheye_camera_main_support.step")
     add("main_support", step(support), np.eye(4), BLUE)
     # cover plate: rod Ø4.1 (x -28/-8, z 29) and M3 (z 4) line up with the bar; nuts in the bar's slots, y 140..150
-    add("main_support_cover_plate", step(RD / "end_cover.step" if redesign else R / "main_support_cover_plate.step"),
+    add("main_support_cover_plate", step(R / "end_cover.step" if redesign else SRC / "main_support_cover_plate.step"),
         T(I3, [0, 150, 0]), BLUE)
     for x in (-28.0, -8.0):                                   # Ø4 x 135 rods
         add(f"rod_{x:+.0f}", Cylinder(2.0, 135.0), T([[1, 0, 0], [0, 0, 1], [0, -1, 0]], [x, 75.0, 29.0]), METAL)
@@ -80,8 +81,8 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
     th, p1, p2, yt, yi = link_positions(opening)
     # finger links: Ø8.2 LM4UU bores (link y -40.5/-20.5, z 1.5) on the rods; flipped so the pin faces the bar
     RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
-    add("thumb_link", step(R / "right_thumb_link.step"), T(RL, [-48.5, yt, 30.5]), ORANGE)
-    add("index_link", step(R / "right_index_middle_finger_link.step"), T(RL, [-48.5, yi, 30.5]), ORANGE)
+    add("thumb_link", step(R / "right_thumb_link.step"), T(RL, [-48.5, yt, 30.5]), WHITE)
+    add("index_link", step(R / "right_index_middle_finger_link.step"), T(RL, [-48.5, yi, 30.5]), WHITE)
     for nm, yc in (("thumb", yt), ("index", yi)):
         for x in (-28.0, -8.0):
             add(f"lm4uu_{nm}_{x:+.0f}", Cylinder(4.0, 12.0) - Cylinder(2.0, 13.0),
@@ -91,7 +92,7 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
     add("servo_sts3215", step(HW / "reference/STS3215_03a.step"), T([[-1, 0, 0], [0, -1, 0], [0, 0, 1]], [-5.5, 72.5, -11.8]), DARK)
     c, s = np.cos(th), np.sin(th)
     add("crank_mechanism_plate", step(R / "crank_mechanism_plate.step"),
-        T([[c, 0, -s], [s, 0, c], [0, -1, 0]], [CRANK_C[0], CRANK_C[1], crank_z]), ORANGE)
+        T([[c, 0, -s], [s, 0, c], [0, -1, 0]], [CRANK_C[0], CRANK_C[1], crank_z]), WHITE)
     for nm, pc, key, yl in (("1", p1, "thumb", yt), ("2", p2, "index", yi)):
         pl = np.array([LINK_PIN_X[key], yl])
         u = (pc - pl) / np.linalg.norm(pc - pl)
@@ -100,20 +101,26 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
             T([[u[0], 0, -u[1]], [u[1], 0, u[0]], [0, -1, 0]], [mid[0], mid[1], conn_z]), BLUE)
 
     # arm end stack on the two M3 holes (69, 64.5/80.5): controller support channel | arm | hand support base
-    add("hand_support_base", step(R / "hand_support_base.step"), T(I3, [31.0, 54.5, 8.0]), ORANGE)
+    add("hand_support_base", step(R / "hand_support_base.step"), T(I3, [31.0, 54.5, 8.0]), WHITE)
     add("controller_support", step(R / "right_controller_support.step"),
         T([[0, 1, 0], [-1, 0, 0], [0, 0, 1]], [53.0, 95.4, 0.0]), BLUE)
 
-    # servo-controller box (Waveshare adapter) on the arm, -Z side, between the servo and the controller support.
-    # HandUMI has no mating holes for it on the arm, so this follows their cover render: floor on the arm, lid up.
-    RB = [[0, 1, 0], [1, 0, 0], [0, 0, -1]]
-    add("servo_controller_box", step(R / "right_servo_controller_support.step"), T(RB, [40.0, 72.5, -20.0]), ORANGE)
-    add("servo_controller_lid", step(RD / "controller_lid.step" if redesign else R / "servo_controller_cover.step"),
-        T(RB, [40.0, 72.5, -27.7]), BLUE)
+    # electronics box under the arm (-Z side): Pico 2 on the lid, IMU in the floor, USB 3 hub on the floor;
+    # two M3 screws come up through the arm's counterbored holes (30, 72.5) / (50, 72.5)
+    RB = np.diag([1.0, -1.0, -1.0])                                    # box local z -> -Z
+    cxy = EB.BOX_CENTRE_M
+    add("electronics_box", step(R / "electronics_box.step"), T(RB, [cxy[0], cxy[1], 0.0]), WHITE)
+    add("electronics_lid", step(R / "electronics_lid.step"), T(RB, [cxy[0], cxy[1], 0.0]), BLUE)
+    bz = EB.BOX[2]
+    boards = {"pico2": Pos(0, 0, bz - EB.PICO_STANDOFF_H - 0.5) * Box(21.0, 51.0, 1.0),
+              "imu": Pos(*EB.IMU_AT, EB.FLOOR - EB.IMU_POCKET[2] + 0.8) * Box(25.0, 22.0, 1.6),
+              "usb3_hub": Pos(*EB.HUB_AT, EB.FLOOR + 5.0) * Box(EB.HUB_BAY[0] - 1, EB.HUB_BAY[1] - 1, 10.0)}
+    for nm, b in boards.items():
+        add(nm, b, T(RB, [cxy[0], cxy[1], 0.0]), PCB)
 
     # camera on the hinge tab (Ø3.2 axis Y at x -29.7, z -45, centred y 72.5)
-    cams = {"wrist": (HW / "STEP/d405/wrist_d405_mount_handumi.step", 2.0),
-            "stock": (R / "camera_mount.step", None)}
+    cams = {"wrist": (R / "d405_wrist_mount.step", 2.0),
+            "stock": (SRC / "camera_mount.step", None)}
     path, floor = cams[camera]
     a = np.radians(tilt_deg)
     base = np.array([[0, 0, -1], [1, 0, 0], [0, -1, 0]], float)   # cam x->+Y (hinge), y->-Z (up), z->-X (view)
@@ -121,7 +128,7 @@ def assemble(opening=0.6, camera="wrist", tilt_deg=65.0, support=None, crank_z=C
     Rc = tilt @ base
     hinge_cam = np.array([0.0, *H.AXIS_CAM]) if camera == "wrist" else np.array([0.0, -28.25, 1.5])
     tc = np.array([H.AXIS_M[0], H.Y_CENTRE, H.AXIS_M[1]]) - Rc @ hinge_cam
-    add("camera_mount", step(path), T(Rc, tc), ORANGE)
+    add("camera_mount", step(path), T(Rc, tc), WHITE)
     if floor is not None:
         add("d405", d405_dummy(floor), T(Rc, tc), DARK)
 
@@ -138,7 +145,8 @@ ALLOWED = [{"rod", "lm4uu"}, {"lm4uu", "thumb_link"}, {"lm4uu", "index_link"}, {
            # pin joints: Ø3 pins run through MR63 bearings in the connecting links (bearings not modelled)
            {"crank_mechanism_plate", "connecting_link_1"}, {"crank_mechanism_plate", "connecting_link_2"},
            {"connecting_link_1", "thumb_link"}, {"connecting_link_2", "index_link"},
-           {"camera_mount", "d405"}]          # the D405 is a visual stand-in (body only, no fillet at the floor)
+           {"camera_mount", "d405"}, {"imu", "electronics_box"},   # IMU sits in its floor pocket
+           {"thumb_link", "tip_thumb"}, {"index_link", "tip_index"}]  # bolted face contact (0.03 mm sliver)          # the D405 is a visual stand-in (body only, no fillet at the floor)
 
 
 def interferences(parts, tol=1.0):

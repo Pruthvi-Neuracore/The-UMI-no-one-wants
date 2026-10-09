@@ -3,11 +3,12 @@ import numpy as np
 import pyvista as pv
 from build123d import import_step
 
-from assembly import BLUE, DARK, HW, ORANGE, ROOT, assemble, d405_dummy
+from assembly import BLUE, DARK, HW, PCB, ROOT, WHITE, assemble, d405_dummy
 from occ import place
 
 pv.OFF_SCREEN = True
 IMG = ROOT / "docs/img"
+BG = "#e6eaef"
 
 
 def poly(shape, tol=0.06):
@@ -22,7 +23,7 @@ def plotter(shape, size):
 
 
 def show(pl, items, view, up, title=None, zoom=1.2):
-    pl.set_background("white")
+    pl.set_background(BG)
     for m, c in items:
         pl.add_mesh(m, color=c, specular=0.4, specular_power=20, smooth_shading=True, split_sharp_edges=True)
     if title:
@@ -42,16 +43,23 @@ def hero(opening=0.55):
 
 
 def parts():
-    rd = HW / "STEP/redesign"
-    ms, ec, lid = (import_step(str(rd / f)) for f in ("main_support.step", "end_cover.step", "controller_lid.step"))
-    cup = import_step(str(HW / "STEP/d405/wrist_d405_mount_handumi.step"))
+    rd = HW / "STEP/right"
+    ms, ec, eb, el = (import_step(str(rd / f)) for f in
+                      ("main_support.step", "end_cover.step", "electronics_box.step", "electronics_lid.step"))
+    cup = import_step(str(rd / "d405_wrist_mount.step"))
+    import electronics_box as EB
+    from build123d import Box, Pos
+    bz = EB.BOX[2]
+    boards = [(poly(Pos(*EB.HUB_AT, EB.FLOOR + 5.0) * Box(EB.HUB_BAY[0] - 1, EB.HUB_BAY[1] - 1, 10.0)), PCB),
+              (poly(Pos(*EB.IMU_AT, EB.FLOOR - EB.IMU_POCKET[2] + 0.8) * Box(25.0, 22.0, 1.6)), PCB)]
+    pico = [(poly(Pos(0, 0, bz - EB.PICO_STANDOFF_H - 0.5) * Box(21.0, 51.0, 1.0)), PCB)]
     up = (0, 0, -1)
     panels = [([(poly(ms, 0.04), BLUE)], "main support", (0.8, -0.6, -0.9), up),
-              ([(poly(ms, 0.04), BLUE)], "main support: camera post (M4 hinge)", (-0.9, -0.5, 0.6), up),
-              ([(poly(ec, 0.04), BLUE)], "end cover", (0.6, -1.0, -0.5), up),
-              ([(poly(lid, 0.04), BLUE)], "controller lid", (0.4, -0.5, 1.0), (0, 1, 0)),
-              ([(poly(cup, 0.04), ORANGE)], "D405 wrist mount", (1, -1.3, 0.9), (0, 0, 1)),
-              ([(poly(cup, 0.04), ORANGE), (poly(d405_dummy(2.0), 0.04), DARK)], "D405 wrist mount with camera", (1, -1.3, 0.9), (0, 0, 1))]
+              ([(poly(ms, 0.04), BLUE)], "main support: braced camera post, M4 hinge", (-0.9, -0.5, 0.6), up),
+              ([(poly(cup, 0.04), WHITE), (poly(d405_dummy(2.0), 0.04), DARK)], "D405 wrist mount", (1, -1.3, 0.9), (0, 0, 1)),
+              ([(poly(eb, 0.04), WHITE)] + boards, "electronics box: USB 3 hub + IMU", (0.6, -0.9, 1.2), (0, 0, 1)),
+              ([(poly(el, 0.04), BLUE)] + pico, "lid with Pico 2 underneath", (0.5, -0.8, -1.0), (0, 0, -1)),
+              ([(poly(ec, 0.04), BLUE)], "end cover", (0.6, -1.0, -0.5), up)]
     pl = plotter((2, 3), (2100, 1300))
     for i, (items, title, v, u) in enumerate(panels):
         pl.subplot(i // 3, i % 3)
