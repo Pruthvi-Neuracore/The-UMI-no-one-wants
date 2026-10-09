@@ -8,5 +8,8 @@ Changes in this repository:
 - **Added** `STEP/d405/d405_camera_mount.step` and `STL/d405/d405_camera_mount.stl`: a mount for the Intel RealSense D405 that
   replaces `camera_mount` (left and right). The hinge knuckles are cut unchanged from HandUMI's `camera_mount.step`; the
   camera plate is new. Source: `d405_mount/d405_camera_mount.py`.
+- **Added** `STEP/d405/wrist_d405_mount_handumi.step` and `STL/d405/wrist_d405_mount_handumi.stl`: the supplied D405 wrist
+  mount with its tab replaced by HandUMI's camera hinge (cut unchanged from `camera_mount.step`). Source:
+  `d405_mount/wrist_mount_to_handumi.py`.
 
 Every other file in `hardware/` and `bom/` is unmodified.
