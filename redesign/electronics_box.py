@@ -53,7 +53,7 @@ def shell():
     b -= box(-bx / 2 - 1, -bx / 2 + WALL + 1, -9, 9, 13.5, 23.5)          # D405 cable (USB plug passes)
     b -= box(-bx / 2 - 1, -bx / 2 + WALL + 1, -34, -26, 6, 11)            # servo cable
     b -= box(4, 17, by / 2 - WALL - 1, by / 2 + 1, 6, 14)                  # USB-C to the laptop (hub upstream)
-    return b
+    return _soften(b, [e for e in b.edges() if e.bounding_box().max.Z < 0.01], (2.5, 2.0, 1.5))   # rounded underside
 
 
 def lid():
@@ -66,7 +66,21 @@ def lid():
     for x, y in PICO_HOLES:                                             # Pico hangs under the lid
         l += Pos(x, y, bz - PICO_STANDOFF_H / 2 + 0.01) * Cylinder(2.6, PICO_STANDOFF_H)
         l -= Pos(x, y, bz - PICO_STANDOFF_H + 3) * Cylinder(M2_PILOT / 2, 8)
-    return l
+    top = [e for e in l.edges() if e.bounding_box().min.Z > bz + LID_T - 0.01 and abs(abs(e.center().X) - 0) >= 0
+           and (abs(e.center().X) > bx / 2 - 6 or abs(e.center().Y) > by / 2 - 6)]
+    return _soften(l, top, (1.5, 1.0))                                  # rounded top edge
+
+
+def _soften(shape, edges, radii):
+    from build123d import fillet
+    for r in radii:
+        try:
+            out = fillet(list(edges), r)
+            if out.is_valid:
+                return out
+        except Exception:
+            pass
+    return shape
 
 
 def to_m(x, y):

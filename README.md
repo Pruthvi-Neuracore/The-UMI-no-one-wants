@@ -11,7 +11,7 @@ A hand-worn gripper for collecting bimanual manipulation data without a robot in
 - **Braced camera post:** a tapered post with a 60 mm keel, flaring smoothly into the frame, carries the hinge.
 - **Universal tip flange:** each finger link has a 20 × 30 mm flange with M2 (8 × 12), M3 (12 × 24 + centre pair) and M4 (12 mm pair) hole patterns, so you can bolt on different gripper tips.
 - **One cable:** a closed electronics box holds a USB 3 hub, the Pico 2 and the IMU. The camera and the Pico both connect to the hub, and one USB-C cable goes to the laptop. See [docs/electronics.md](docs/electronics.md).
-- **Clean frame:** the T-plate is built from one continuous outline with blended corners, uniform edge rounding, lightening slots and faceted ends, plus a matching end cover.
+- **Moulded look:** every printed part is softly rounded: the T-plate has a blended outline, 3 mm rounds on top, rounded slot rims, a concave blend into the end wall and a camera post that flares into the plate; the end cover and electronics box match.
 - **Checked in a full assembly:** the gripper is clash-checked closed, half-open and open, across camera tilts from 40° to 80°.
 
 ## Parts
