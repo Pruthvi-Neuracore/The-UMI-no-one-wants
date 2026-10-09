@@ -4,11 +4,11 @@
 
 | # | Decision | Options | Status |
 |---|---|---|---|
-| D1 | CAD authoring | Code CAD (build123d / CadQuery), Onshape, other | open |
-| D2 | Actuation | Passive trigger + width sensor; servo driven by trigger input; other | open |
-| D3 | Camera | GoPro, ELP fisheye USB, other | open |
-| D4 | Target robot mount | OpenArm flange, other | open |
-| D5 | Finger type | Fin-ray soft fingers, rigid parallel jaw + pads | open |
+| D1 | CAD authoring | build123d (code CAD) | v0.1 |
+| D2 | Actuation | Collector: finger pinch + AS5600. Robot: STS3215 on the same pinion | decided |
+| D3 | Camera | IMX335 or D405 on a swappable dock; Insta360 later | decided |
+| D4 | Target robot mount | OpenArm via YUBI flange + attachment | decided |
+| D5 | Finger type | Parallel jaw, HandUMI tips | decided |
 
 ## Functional requirements (draft)
 
