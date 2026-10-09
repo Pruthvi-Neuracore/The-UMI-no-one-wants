@@ -9,7 +9,7 @@ A hand-worn gripper for collecting bimanual manipulation data without a robot in
 your index finger, and a single USB cable to your laptop.
 
 - **Depth wrist camera:** the D405 sits in a cup on a stiff Ø12 / M4 hinge at the end of a braced camera post that flares
-  out of the frame. It looks forward and down at the fingers (65° below horizontal, about 9–10 cm away; the D405's minimum
+  out of the frame; triangulated gussets tie both hinge lugs into the cup. It looks forward and down at the fingers (65° below horizontal, about 9–10 cm away; the D405's minimum
   range is 7 cm). The camera cable leaves from the top window and runs back into the electronics box.
 - **Finger sleeves:** each finger link has a sleeve that wraps the finger, so the fingers stay in place while you open and
   close the gripper.
@@ -29,8 +29,9 @@ your index finger, and a single USB cable to your laptop.
   <img src="docs/img/record_button.png" alt="Record button at the front of the index-finger sleeve" width="620">
 </p>
 
-A 6 × 6 mm tactile switch is set flush into the inner wall of the index-finger sleeve, where the finger pad rests. Press it
-with your index finger: **press once to start recording, press again to stop.** It's wired to the Pico (GP15 to ground,
+A 6 × 6 mm tactile switch is set into the inner wall of the index-finger sleeve, where the finger pad rests, under a soft
+TPU cover that sits flush with the wall (a nub on its underside presses the switch). A cavity behind the switch leaves
+room for its legs and solder joints and opens at the back for soldering. Press it with your index finger: **press once to start recording, press again to stop.** It's wired to the Pico (GP15 to ground,
 internal pull-up), so the recording software only has to watch one input; see [docs/electronics.md](docs/electronics.md).
 That wall is also the one your finger pushes to close the gripper, so use a stiff switch (about 250–320 gf); the
 software can tell a deliberate press from a grasp by its duration. The wires leave through the back of the paddle and
@@ -69,6 +70,7 @@ tips from `hardware/STL/gripper_tips/`. STEP files for every part are in `hardwa
 | Main support (T-plate with camera post) | `main_support.stl` |
 | End cover | `end_cover.stl` |
 | D405 wrist mount (cup on the M4 hinge) | `d405_wrist_mount.stl` |
+| Record-button cover (TPU) | `button_cover_tpu.stl` |
 | Electronics box + lid | `electronics_box.stl`, `electronics_lid.stl` |
 | Thumb and index/middle finger links (finger sleeve, universal tip flange; record button in the index sleeve) | `*_thumb_link.stl`, `*_index_middle_finger_link.stl` |
 | Crank, connecting links, hand support base, controller support | `crank_mechanism_plate.stl`, `connecting_link_1/2.stl`, `hand_support_base.stl`, `*_controller_support.stl` |
@@ -85,9 +87,10 @@ tips from `hardware/STL/gripper_tips/`. STEP files for every part are in `hardwa
 
 Base mechanics, rods, bearings, servo and fasteners are listed in [bom/README.md](bom/README.md), with these changes:
 
-- **Camera:** Intel RealSense D405 instead of the IMX335 camera. Fix it with 2× M3×10 screws through the ridge under the cup into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth; this leaves 3.5 mm of thread).
+- **Camera:** Intel RealSense D405 instead of the IMX335 camera. Fix it with 2× M3×5 screws into its rear holes (2× M3×0.5, 20 mm apart, 4 mm max thread depth).
 - **Camera hinge:** 1× M4×30 bolt with a nyloc nut.
-- **Record button:** 1× 6 × 6 mm tactile switch (stiff, ~250–320 gf), and ~30 cm of thin, flexible 2-core wire.
+- **Record button:** 1× 6 × 6 mm tactile switch (stiff, ~250–320 gf), ~30 cm of thin, flexible 2-core wire, and the
+  `button_cover_tpu.stl` cover printed in TPU 95A.
 - **Electronics:** Raspberry Pi Pico 2, a BNO085 IMU, a small USB 3 hub and short cables. This replaces the servo controller board and its power supply. Full list and wiring: [docs/electronics.md](docs/electronics.md).
 
 ## Files

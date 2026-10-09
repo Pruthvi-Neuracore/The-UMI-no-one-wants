@@ -48,7 +48,7 @@ def button_closeup(opening=0.35):
     import finger_link as FL
     from assembly import link_positions
     p = assemble(opening)
-    keys = ["index_link", "record_button"]
+    keys = ["index_link", "record_button", "button_cover"]
     items = [(poly(p[k][0]), p[k][1]) for k in keys if k in p]
     _, _, _, _, yi = link_positions(opening)
     RL = np.array([[0, -1, 0], [-1, 0, 0], [0, 0, -1]], float)
@@ -67,7 +67,7 @@ def button_closeup(opening=0.35):
     pl.reset_camera()
     pl.camera.focal_point = tuple(to_m(c))
     pl.camera.zoom(1.6)
-    pl.add_point_labels([to_m(c + np.array([0, 0, 14.0]))], ["record button (in the sleeve wall): press to start, press again to stop"],
+    pl.add_point_labels([to_m(c + np.array([0, 0, 14.0]))], ["record button under a soft TPU cover: press to start, press again to stop"],
                         font_size=22, text_color="black", point_size=1, shape_opacity=0.85, always_visible=True)
     pl.screenshot(str(IMG / "record_button.png"))
 

@@ -71,6 +71,9 @@ def finger_hood(thumb, sx):
 BUTTON = 6.0                     # 6 x 6 mm tactile switch (use a stiff one, ~250-320 gf), body 3.5 mm
 BUTTON_Y, BUTTON_Z = -32.0, -22.0   # middle of the sleeve, between the two finger channels
 BUTTON_FACE_X = -0.8             # depth of the channel wall there (index channel centred at x = 10·sx)
+COVER, COVER_T = 10.0, 1.0       # TPU button cover: 10 x 10 mm pad, flush with the wall
+NUB = 0.6                        # nub under the cover that presses the switch
+SWITCH_STACK = COVER_T + NUB + 0.8 + 3.5   # cover + nub + actuator + body: depth of the switch pocket
 
 
 def button_centre(sx):
@@ -86,12 +89,28 @@ def button_parts(sx):
     x_back = -6.0 * sx                                                   # other face of the paddle
     boss = box(min(x_back, x_back - 3.0 * sx), max(x_back, x_back - 3.0 * sx), cy - 7.0, cy + 7.0, cz - 7.0, cz + 7.0)
     boss = fillet(boss.edges().filter_by(Axis.X), 2.5)
-    depth = 3.6                                                          # body sunk into the wall, actuator proud
+    depth = SWITCH_STACK                                                 # switch sits under the TPU cover
     x0, x1 = sorted((cx + 0.6 * sx, cx - depth * sx))
     pocket = box(x0, x1, cy - BUTTON / 2 - 0.2, cy + BUTTON / 2 + 0.2, cz - BUTTON / 2 - 0.2, cz + BUTTON / 2 + 0.2)
-    w0, w1 = sorted((cx, x_back - 3.5 * sx))
-    wires = box(w0, w1, cy + 1.0, cy + 3.0, cz - 1.5, cz + 1.5)          # through the paddle and the boss
-    return boss, pocket + wires
+    l0, l1 = sorted((cx - (depth - 0.1) * sx, x_back - 4.0 * sx))    # legs + solder joints; open at the back for access
+    legs = box(l0, l1, cy - 4.5, cy + 4.5, cz - 3.5, cz + 3.5)
+    w0, w1 = sorted((cx - depth * sx, x_back - 3.5 * sx))
+    wires = box(w0, w1, cy - 1.5, cy + 1.5, cz - 2.0, cz + 2.0)          # out through the boss
+    r0, r1 = sorted((cx - COVER_T * sx, cx + 3.0 * sx))                  # recess for the TPU cover, flush with the wall
+    recess = box(r0, r1, cy - COVER / 2 - 0.15, cy + COVER / 2 + 0.15, cz - COVER / 2 - 0.15, cz + COVER / 2 + 0.15)
+    return boss, pocket + legs + wires + recess
+
+
+def button_cover():
+    """TPU cover for the record button (print in TPU 95A): a 10 x 10 mm pad that sits in the recess over the switch,
+    flush with the sleeve wall, with a nub underneath that presses the switch, so the finger presses through soft
+    material. Modelled flat (pad face up, nub down) for printing."""
+    from build123d import Cylinder
+    pad = Pos(0, 0, COVER_T / 2) * Box(COVER, COVER, COVER_T)
+    pad = fillet(pad.edges().group_by(Axis.Z)[-1], 0.8)
+    nub = Pos(0, 0, -NUB / 2) * Cylinder(1.6, NUB)                      # presses the 3.5 mm actuator
+    rim = Pos(0, 0, -0.3) * (Box(COVER - 0.4, COVER - 0.4, 0.6) - Box(COVER - 2.4, COVER - 2.4, 0.7))   # locates it
+    return pad + nub + rim
 
 
 def finger_link(src):

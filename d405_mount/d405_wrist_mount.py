@@ -61,18 +61,37 @@ def hinge_lugs() -> trimesh.Trimesh:
         lug += Pos((x0 + x1) / 2, (ay - WALL_OUTER + 1.0) / 2, az) * Box(w, abs(ay + WALL_OUTER - 1.0), 2 * r)
         lug -= Pos((x0 + x1) / 2, ay, az) * Rot(0, 90, 0) * Cylinder(H.BOLT_D / 2, w + 2)
         lugs = lug if lugs is None else lugs + lug
-    # solid ridge under the cup floor, fused to both lugs: no thin neck between the hinge and the cup
-    x_out = H.CENTRE_W / 2 + H.GAP + H.LUG_W
-    ridge = Pos(0, (-WALL_OUTER + RIDGE_END) / 2, (az - r + 0.5) / 2) * Box(2 * x_out, RIDGE_END + WALL_OUTER, abs(az - r) + 0.5)
-    ridge = fillet(ridge.edges().filter_by(Axis.Y), 2.0)
-    lugs += ridge
-    for x in (-10.0, 10.0):                                              # D405 screws pass through the ridge (M3 x 10)
-        lugs -= Pos(x, 0.0, -2.0) * Cylinder(1.7, 7.0)
+    # triangulated gussets: from each lug up the back wall of the cup and forward under its floor, one rib per lug
+    for sgn in (-1, 1):
+        x0, x1 = sorted((sgn * x_in, sgn * (x_in + H.LUG_W)))
+        lugs += gusset(x0, x1)
     return to_mesh(lugs)
 
 
+def gusset(x0, x1):
+    """Triangulated rib in the cup's y-z plane between x0 and x1: a strut from the lug up the back wall and a strut
+    from the lug along the underside of the floor, filling the corner between them. Rounded edges."""
+    from build123d import Plane, Polygon, extrude
+    ay, az = H.AXIS_CAM
+    w = -WALL_OUTER + 0.15                                       # just inside the back wall's outer face
+    pts = [(ay + 1.5, az - 6.0),                                  # bottom of the lug
+           (GUSSET_FLOOR_END, 0.15),                              # along the underside of the floor
+           (w, 0.15),                                             # the cup's back corner
+           (w, GUSSET_WALL_TOP),                                  # up the back wall
+           (ay + 2.5, az + 6.0)]                                  # top of the lug
+    pl = Plane(origin=(x0, 0, 0), x_dir=(0, 1, 0), z_dir=(1, 0, 0))   # sketch in y-z, extrude along +x
+    face = pl * Polygon(*pts, align=None)
+    rib = extrude(face, x1 - x0)
+    try:
+        rib = fillet(rib.edges().filter_by(Axis.X, reverse=True), 1.2)
+    except Exception:
+        pass
+    return rib
+
+
 # cable window in the top wall (+Y, opposite the hinge), same size as the cup's side windows
-RIDGE_END = 8.0                            # ridge runs from the hinge side to y = 8 under the floor
+GUSSET_FLOOR_END = -6.0                    # gusset runs under the floor to here (clear of the camera screws)
+GUSSET_WALL_TOP = 20.0                     # and up the back wall to here
 TOP_WINDOW = dict(x=(-13.0, 13.0), z=(2.04, 15.75), corner_r=3.0)
 
 

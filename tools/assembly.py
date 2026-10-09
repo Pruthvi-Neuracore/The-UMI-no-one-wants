@@ -85,10 +85,13 @@ def assemble(opening=0.6, camera="wrist", tipset=None, support=None, crank_z=CRA
     RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
     add("thumb_link", step(R / "right_thumb_link.step"), T(RL, [-48.5, yt, 30.5]), WHITE)
     add("index_link", step(R / "right_index_middle_finger_link.step"), T(RL, [-48.5, yi, 30.5]), WHITE)
-    # record start/stop button: 6 x 6 tactile switch flush in the index sleeve's inner wall (right index: sx = +1)
+    # record start/stop button: 6 x 6 tactile switch under a TPU cover, flush in the index sleeve's wall (right index: sx = +1)
     bx_, by_, bz_ = FL.button_centre(1)
-    sw = Pos(bx_ - 1.75, by_, bz_) * Box(3.5, 6.0, 6.0) + Pos(bx_ + 0.5, by_, bz_) * Rot(0, 90, 0) * Cylinder(1.75, 1.0)
-    add("record_button", sw, T(RL, [-48.5, yi, 30.5]), "#d23b2a")
+    top = bx_ - FL.COVER_T - FL.NUB                                   # actuator top, under the cover's nub
+    sw = Pos(top - 0.8 - 1.75, by_, bz_) * Box(3.5, 6.0, 6.0) + Pos(top - 0.4, by_, bz_) * Rot(0, 90, 0) * Cylinder(1.75, 0.8)
+    add("record_button", sw, T(RL, [-48.5, yi, 30.5]), "#2b2e33")
+    cover = Pos(bx_ - FL.COVER_T, by_, bz_) * Rot(0, 90, 0) * FL.button_cover()
+    add("button_cover", cover, T(RL, [-48.5, yi, 30.5]), "#d23b2a")
     for nm, yc in (("thumb", yt), ("index", yi)):
         for x in (-28.0, -8.0):
             add(f"lm4uu_{nm}_{x:+.0f}", Cylinder(4.0, 12.0) - Cylinder(2.0, 13.0),
@@ -202,7 +205,7 @@ ALLOWED = [{"rod", "lm4uu"}, {"lm4uu", "thumb_link"}, {"lm4uu", "index_link"}, {
            {"camera_mount", "d405"}, {"imu", "electronics_box"},   # IMU sits in its floor pocket
            {"thumb_link", "tip_thumb"}, {"index_link", "tip_index"},   # bolted face contact (0.03 mm sliver)
            {"tip_thumb", "tip_thumb_1"}, {"tip_index", "tip_index_1"},  # pads / socks sit on their jaws
-           {"record_button", "index_link"},                                # switch sits in its pod
+           {"record_button", "index_link"}, {"button_cover", "index_link"}, {"record_button", "button_cover"},
            # the jaws meet before the mechanism's own stop; the closing point is where the tips touch
            {"tip_thumb", "tip_index"}, {"tip_thumb", "tip_index_1"}, {"tip_thumb_1", "tip_index"}, {"tip_thumb_1", "tip_index_1"}]          # the D405 is a visual stand-in (body only, no fillet at the floor)
 

@@ -225,6 +225,12 @@ def main():
             print(f"{n:32s} valid={p.is_valid} solids={len(p.solids())} vol={p.volume:.0f}")
             export_step(p, str(OUT / "STEP" / side / f"{n}.step"))
             export_stl(p, str(OUT / "STL" / side / f"{n}.stl"), tolerance=0.02, angular_tolerance=0.15)
+    from finger_link import button_cover
+    cov = button_cover()
+    for side in ("right", "left"):
+        export_step(cov, str(OUT / "STEP" / side / "button_cover_tpu.step"))
+        export_stl(cov, str(OUT / "STL" / side / "button_cover_tpu.stl"), tolerance=0.01, angular_tolerance=0.1)
+    print(f"button_cover_tpu valid={cov.is_valid} vol={cov.volume:.0f}")
     for name, fn in PARTS.items():
         p = fn()
         print(f"{name:16s} valid={p.is_valid} solids={len(p.solids())} vol={p.volume:.0f}")
