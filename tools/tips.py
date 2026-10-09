@@ -29,6 +29,8 @@ class TipSet:
     robot: str = ""
     travel: str = ""        # native axis the jaws close along (defaults to u8)
     lr_sign: int = 1        # +1: the LEFT file sits at +travel from the RIGHT file in the source; 0: same place
+    flip_index: bool = False  # identical left/right parts: turn the index jaw 180° about the screw axis to mirror it
+    s_only: int = 0         # force the closing-axis sign (+1 / -1) when the automatic facing check picks the wrong way
 
 
 TIP_SETS = [
@@ -36,11 +38,12 @@ TIP_SETS = [
            ["Piper-LEFT-Gripper-Jaw.step", "Piper-LEFT-Gripper-Pad.step"], "x", 10.8,
            (10.8, 172.7, -56.9), (10.8, 238.5, -56.9), "y", "z", robot="piper"),
     TipSet("ARX X5", "ARX-X5-2023", ["ARX-X5-2023-RIGHT-Gripper.step"], ["ARX-X5-2023-LEFT-Gripper.step"], "x", -7.0,
-           (-7.0, -13.1, -64.45), (-7.0, -13.1, 14.45), "z", "y"),
+           (-7.0, -13.1, -64.45), (-7.0, -13.1, 14.45), "z", "y", lr_sign=-1),
     # the TPU inserts are modelled in a different frame from the backbones, so only the backbones are placed
     TipSet("TRLC Dream gripper", "Dream-Gripper", ["TRLC-Dream-Gripper-RIGHT-Backbone.step"],
            ["TRLC-Dream-Gripper-LEFT-Backbone.step"], "x", -9.0,
-           (-9.0, -72.2, 6.5), (-9.0, -72.2, 6.5), "y", "z", u_offsets=(4.0, -4.0), robot="trlc-dk1", lr_sign=0),
+           (-9.0, -72.2, 6.5), (-9.0, -72.2, 6.5), "y", "z", u_offsets=(4.0, -4.0), robot="trlc-dk1", lr_sign=0,
+           flip_index=True, s_only=1),
     TipSet("Trossen WidowX AI", "Trossen-WidowXAI", ["WXAI-RIGHT-Gripper-backbone.step", "WXAI-RIGHT-Gripper-sock.step"],
            ["WXAI-LEFT-Gripper-backbone.step", "WXAI-LEFT-Gripper-sock.step"], "z", -69.8,
            (-24.7, -2.1, -69.8), (24.7, -2.1, -69.8), "x", "y"),
@@ -58,14 +61,17 @@ def orientations(ts):
     tr = AX[ts.travel or ts.u8]
     w = np.cross(a, tr)
     out = []
-    for s in (1, -1):
+    for s in ((ts.s_only,) if ts.s_only else (1, -1)):
         M_tip = np.column_stack([a, tr, w])
         M_link = np.column_stack([AX["y"], s * AX["x"], np.cross(AX["y"], s * AX["x"])])
         R = M_link @ np.linalg.inv(M_tip)
         # thumb sits at -x (link) from the index; LEFT sits at lr_sign·travel from RIGHT in the source
         thumb_side = "left" if ts.lr_sign * s < 0 else "right"
+        R_index, sign_du = R, 1.0
+        if ts.flip_index:                                       # 180° about the screw axis (tip frame), then map
+            R_index, sign_du = R @ (2 * np.outer(a, a) - np.eye(3)), -1.0
         for du in ts.u_offsets:
-            out.append((R, du, thumb_side))
+            out.append(((R, R_index), (du, sign_du * du), thumb_side))
     return out
 
 

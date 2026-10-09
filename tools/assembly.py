@@ -132,11 +132,11 @@ def assemble(opening=0.6, camera="wrist", tipset=None, support=None, crank_z=CRA
 
     # gripper tips on the finger-link flange (link y = 0 face); orientation from tips.fit_tipset()
     ts, choice = tipset if tipset is not None else (TIP_SETS[0], None)
-    R_t, du, thumb_side = choice or best_orientation(ts)
+    Rs, dus, thumb_side = choice or best_orientation(ts)
     side_files = {"left": (ts.left, ts.centre_l), "right": (ts.right, ts.centre_r)}
     index_side = "right" if thumb_side == "left" else "left"
-    for nm, (files, centre), yc in (("thumb", side_files[thumb_side], yt), ("index", side_files[index_side], yi)):
-        Tt = link_transform(R_t, centre, ts.axis, ts.face, du)
+    for k, (nm, (files, centre), yc) in enumerate((("thumb", side_files[thumb_side], yt), ("index", side_files[index_side], yi))):
+        Tt = link_transform(Rs[k], centre, ts.axis, ts.face, dus[k])
         TL = T(RL, [-48.5, yc, 30.5])
         for k, fn in enumerate(files):
             col = "#e07020" if "Soft" in fn else DARK                     # compliant inserts in orange
@@ -153,28 +153,28 @@ def best_orientation(ts, cache={}):
     RL = [[0, -1, 0], [-1, 0, 0], [0, 0, -1]]
     files = {"left": (ts.left, ts.centre_l), "right": (ts.right, ts.centre_r)}
     best = None
-    for R_t, du, thumb_side in orientations(ts):
+    for Rs, dus, thumb_side in orientations(ts):
         index_side = "right" if thumb_side == "left" else "left"
         for op in np.arange(0.0, 0.5, 0.05):
             _, _, _, yt, yi = link_positions(op)
             placed = []
-            for side, yc in ((thumb_side, yt), (index_side, yi)):
+            for k, (side, yc) in enumerate(((thumb_side, yt), (index_side, yi))):
                 fl, centre = files[side]
                 m = _tip_mesh(ts.folder, fl[0]).copy()
-                m.apply_transform(T(RL, [-48.5, yc, 30.5]) @ link_transform(R_t, centre, ts.axis, ts.face, du))
+                m.apply_transform(T(RL, [-48.5, yc, 30.5]) @ link_transform(Rs[k], centre, ts.axis, ts.face, dus[k]))
                 placed.append(m)
             if all(m.is_volume for m in placed):
                 ov = trimesh.boolean.intersection(placed, engine="manifold").volume
             else:                                                        # exact solids for non-watertight meshes
                 sol = [place(step(HW / "STEP/gripper_tips" / ts.folder / files[sd][0][0]),
-                             T(RL, [-48.5, yc, 30.5]) @ link_transform(R_t, files[sd][1], ts.axis, ts.face, du))
-                       for sd, yc in ((thumb_side, yt), (index_side, yi))]
+                             T(RL, [-48.5, yc, 30.5]) @ link_transform(Rs[k], files[sd][1], ts.axis, ts.face, dus[k]))
+                       for k, (sd, yc) in enumerate(((thumb_side, yt), (index_side, yi)))]
                 ov = overlap(sol[0], sol[1])
             if ov < 0.5:
                 from scipy.spatial import cKDTree
                 gap = float(cKDTree(placed[1].vertices).query(placed[0].vertices)[0].min())
                 if best is None or (op, gap) < (best[0], best[1]):
-                    best = (op, gap, (R_t, du, thumb_side))
+                    best = (op, gap, (Rs, dus, thumb_side))
                 break
     cache[ts.name] = best[2]
     return best[2]
